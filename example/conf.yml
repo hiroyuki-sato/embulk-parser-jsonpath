@@ -5,7 +5,9 @@ in:
     type: jsonpath
     root: "$.items"
     columns:
-      - { name: "sticker_price", type: string }
-      - { name: "review_ranking_in_category", type: string }
+      - { name: "sticker_price", type: long }
+      - { name: "review_ranking_in_category", type: long }
+#      - { name: "aaa", type: string }
+#      - { name: "bbb", type: string }
 out:
   type: stdout

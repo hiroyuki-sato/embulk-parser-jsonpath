@@ -20,7 +20,14 @@ import org.embulk.spi.PageOutput;
 import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
 import org.embulk.spi.SchemaConfig;
+import org.embulk.spi.time.TimestampParser;
 import org.embulk.spi.util.FileInputInputStream;
+
+import org.embulk.spi.util.Timestamps;
+import org.msgpack.value.Value;
+import org.embulk.config.ConfigDefault;
+import com.google.common.base.Optional;
+import org.msgpack.value.ValueFactory;
 
 import java.util.Map;
 
@@ -34,14 +41,28 @@ public class JsonpathParserPlugin
 
     private static final ObjectMapper defaultObjectMapper = new ObjectMapper();
 
-    public interface PluginTask
+    public interface TypecastColumnOption
             extends Task
+    {
+        @Config("typecast")
+        @ConfigDefault("null")
+        public Optional<Boolean> getTypecast();
+    }
+
+    public interface PluginTask
+            extends Task,TimestampParser.Task
     {
         @Config("root")
         public String getRoot();
 
         @Config("columns")
-        public SchemaConfig getColumns();
+        SchemaConfig getSchemaConfig();
+
+        @Config("default_typecast")
+        @ConfigDefault("true")
+        Boolean getDefaultTypecast();
+
+
     }
 
     @Override
@@ -49,7 +70,7 @@ public class JsonpathParserPlugin
     {
         PluginTask task = config.loadConfig(PluginTask.class);
 
-        Schema schema = task.getColumns().toSchema();
+        Schema schema = task.getSchemaConfig().toSchema();
 
         control.run(task.dump(), schema);
     }
@@ -61,8 +82,12 @@ public class JsonpathParserPlugin
         PluginTask task = taskSource.loadTask(PluginTask.class);
         String json_root = task.getRoot();
         System.out.println(json_root);
+        final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getSchemaConfig());
+
 
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
+            ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
+
             try (FileInputInputStream is = new FileInputInputStream(input)) {
                 while (is.nextFile()) {
                     JsonNode root_node = JsonPath.using(configuration)
@@ -72,23 +97,22 @@ public class JsonpathParserPlugin
 //            throw new JsonpathParserValidateException("Invalid root. Result is not Array");
                         throw new DataException("Test test");
                     }
-                    Map map;
+                    Map<String,Object> map;
                     for (final JsonNode node : root_node) {
                         System.out.println(node);
                         if( node.isObject() )
                         {
                             map = defaultObjectMapper.convertValue(node,Map.class);
-                            System.out.println(map);
                         }
                         else {
                             throw new DataException("Invalid node type");
                         }
 
                         for (Column column : schema.getColumns()) {
-//                            long t = map.get(column.getName());
-                            System.out.println(map.get(column.getName()));
-//                            pageBuilder.setLong(column,map.get(column.getName()));
-                            pageBuilder.setString(column, "test");
+                            Value value = buildValue(map.get(column.getName()));
+//                            Value value = map.get(column.getName());
+                            visitor.setValue(value);
+                            column.visit(visitor);
                         }
                         pageBuilder.addRecord();
                     }
@@ -99,6 +123,24 @@ public class JsonpathParserPlugin
         }
     }
 
+    private Value buildValue(Object o)
+    {
+        Value value;
+        if ( o == null )
+            value = ValueFactory.newNil();
+        else if (o instanceof String)
+            value = ValueFactory.newString((String) o);
+        else if( o instanceof Boolean )
+            value = ValueFactory.newBoolean((Boolean)o);
+        else if( o instanceof Integer )
+            value = ValueFactory.newInteger((Integer)o);
+        else if( o instanceof Float )
+            value = ValueFactory.newFloat((Float)o);
+        else
+            throw new DataException("Invalid node type");
+        return value;
+    }
+    
     static class JsonpathParserValidateException
             extends DataException
     {
