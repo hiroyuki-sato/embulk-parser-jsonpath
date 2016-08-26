@@ -22,6 +22,8 @@ import org.embulk.spi.Schema;
 import org.embulk.spi.SchemaConfig;
 import org.embulk.spi.util.FileInputInputStream;
 
+import java.util.Map;
+
 public class JsonpathParserPlugin
         implements ParserPlugin
 {
@@ -59,7 +61,6 @@ public class JsonpathParserPlugin
         PluginTask task = taskSource.loadTask(PluginTask.class);
         String json_root = task.getRoot();
         System.out.println(json_root);
-        ObjectReader reader;
 
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
             try (FileInputInputStream is = new FileInputInputStream(input)) {
@@ -71,11 +72,22 @@ public class JsonpathParserPlugin
 //            throw new JsonpathParserValidateException("Invalid root. Result is not Array");
                         throw new DataException("Test test");
                     }
-
+                    Map map;
                     for (final JsonNode node : root_node) {
                         System.out.println(node);
-                        for (Column column : schema.getColumns()) {
+                        if( node.isObject() )
+                        {
+                            map = defaultObjectMapper.convertValue(node,Map.class);
+                            System.out.println(map);
+                        }
+                        else {
+                            throw new DataException("Invalid node type");
+                        }
 
+                        for (Column column : schema.getColumns()) {
+//                            long t = map.get(column.getName());
+                            System.out.println(map.get(column.getName()));
+//                            pageBuilder.setLong(column,map.get(column.getName()));
                             pageBuilder.setString(column, "test");
                         }
                         pageBuilder.addRecord();
