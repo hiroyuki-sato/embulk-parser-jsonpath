@@ -1,39 +1,43 @@
 package org.embulk.parser.jsonpath;
 
-import com.google.common.base.Optional;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
+import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import org.embulk.config.Config;
-import org.embulk.config.ConfigDefault;
-import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
-import org.embulk.spi.ParserPlugin;
+import org.embulk.spi.Column;
+import org.embulk.spi.DataException;
+import org.embulk.spi.Exec;
 import org.embulk.spi.FileInput;
+import org.embulk.spi.PageBuilder;
 import org.embulk.spi.PageOutput;
+import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
 import org.embulk.spi.SchemaConfig;
+import org.embulk.spi.util.FileInputInputStream;
 
 public class JsonpathParserPlugin
         implements ParserPlugin
 {
+    private static final Configuration configuration = Configuration.builder()
+            .jsonProvider(new JacksonJsonNodeJsonProvider())
+            .mappingProvider(new JacksonMappingProvider())
+            .build();
+
+    private static final ObjectMapper defaultObjectMapper = new ObjectMapper();
+
     public interface PluginTask
             extends Task
     {
-        // configuration option 1 (required integer)
-        @Config("option1")
-        public int getOption1();
+        @Config("root")
+        public String getRoot();
 
-        // configuration option 2 (optional string, null is not allowed)
-        @Config("option2")
-        @ConfigDefault("\"myvalue\"")
-        public String getOption2();
-
-        // configuration option 3 (optional string, null is allowed)
-        @Config("option3")
-        @ConfigDefault("null")
-        public Optional<String> getOption3();
-
-        // if you get schema from config or data source
         @Config("columns")
         public SchemaConfig getColumns();
     }
@@ -53,8 +57,42 @@ public class JsonpathParserPlugin
             FileInput input, PageOutput output)
     {
         PluginTask task = taskSource.loadTask(PluginTask.class);
+        String json_root = task.getRoot();
+        System.out.println(json_root);
+        ObjectReader reader;
 
-        // Write your code here :)
-        throw new UnsupportedOperationException("JsonpathParserPlugin.run method is not implemented yet");
+        try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
+            try (FileInputInputStream is = new FileInputInputStream(input)) {
+                while (is.nextFile()) {
+                    JsonNode root_node = JsonPath.using(configuration)
+                            .parse(is)
+                            .read(json_root);
+                    if (!root_node.isArray()) {
+//            throw new JsonpathParserValidateException("Invalid root. Result is not Array");
+                        throw new DataException("Test test");
+                    }
+
+                    for (final JsonNode node : root_node) {
+                        System.out.println(node);
+                        for (Column column : schema.getColumns()) {
+
+                            pageBuilder.setString(column, "test");
+                        }
+                        pageBuilder.addRecord();
+                    }
+                }
+            }
+
+            pageBuilder.finish();
+        }
+    }
+
+    static class JsonpathParserValidateException
+            extends DataException
+    {
+        JsonpathParserValidateException(Throwable cause)
+        {
+            super(cause);
+        }
     }
 }

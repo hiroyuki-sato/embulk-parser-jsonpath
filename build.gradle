@@ -21,7 +21,9 @@ targetCompatibility = 1.7
 dependencies {
     compile  "org.embulk:embulk-core:0.8.13"
     provided "org.embulk:embulk-core:0.8.13"
-    // compile "YOUR_JAR_DEPENDENCY_GROUP:YOUR_JAR_DEPENDENCY_MODULE:YOUR_JAR_DEPENDENCY_VERSION"
+
+    compile 'com.jayway.jsonpath:json-path:2.2.0'
+
     testCompile "junit:junit:4.+"
 }
 

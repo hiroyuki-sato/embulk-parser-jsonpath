@@ -1,0 +1,11 @@
+in:
+  type: file
+  path_prefix: example/input
+  parser:
+    type: jsonpath
+    root: "$.items"
+    columns:
+      - { name: "test1", type: string }
+      - { name: "test2", type: string }
+out:
+  type: stdout
