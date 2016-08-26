@@ -28,6 +28,7 @@ import org.msgpack.value.Value;
 import org.embulk.config.ConfigDefault;
 import com.google.common.base.Optional;
 import org.msgpack.value.ValueFactory;
+import org.slf4j.Logger;
 
 import java.util.Map;
 
@@ -40,6 +41,8 @@ public class JsonpathParserPlugin
             .build();
 
     private static final ObjectMapper defaultObjectMapper = new ObjectMapper();
+
+    private static final Logger logger = Exec.getLogger(JsonpathParserPlugin.class);
 
     public interface TypecastColumnOption
             extends Task
@@ -81,7 +84,7 @@ public class JsonpathParserPlugin
     {
         PluginTask task = taskSource.loadTask(PluginTask.class);
         String json_root = task.getRoot();
-        System.out.println(json_root);
+        logger.debug("JSONPath = " + json_root);
         final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getSchemaConfig());
 
 
@@ -93,13 +96,13 @@ public class JsonpathParserPlugin
                     JsonNode root_node = JsonPath.using(configuration)
                             .parse(is)
                             .read(json_root);
+                    logger.debug("root_node = " + root_node.toString());
                     if (!root_node.isArray()) {
-//            throw new JsonpathParserValidateException("Invalid root. Result is not Array");
-                        throw new DataException("Test test");
+                        throw new DataException("This path does not Array object.");
                     }
                     Map<String,Object> map;
                     for (final JsonNode node : root_node) {
-                        System.out.println(node);
+                        logger.debug(node.toString());
                         if( node.isObject() )
                         {
                             map = defaultObjectMapper.convertValue(node,Map.class);
