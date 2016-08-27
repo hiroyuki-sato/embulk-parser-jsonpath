@@ -8,7 +8,7 @@ in:
       - { name: "pickup_copy", type: long }
       - { name: "sticker_price", type: long }
       - { name: "review_ranking_in_category", type: long }
-      - { name: "review_ranking_in_category", type: long }
+#      - { name: "review_ranking_in_category", type: long }
       - { name: "stock", type: long }
       - { name: "goods_id", type: long }
 #      - { name: "aaa", type: string }
