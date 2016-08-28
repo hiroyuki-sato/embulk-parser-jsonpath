@@ -55,7 +55,7 @@ public class TestJsonpathParserPlugin
     @Before
     public void createResource()
     {
-        config = config().set("type", "jsonl");
+        config = config().set("type", "jsonpath");
         plugin = new JsonpathParserPlugin();
         recreatePageOutput();
     }
@@ -96,6 +96,169 @@ public class TestJsonpathParserPlugin
             }
         });
     }
+
+    @Test
+    public void skipRecords()
+            throws Exception
+    {
+        SchemaConfig schema = schema(
+                column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
+                column("_c3", STRING), column("_c4", TIMESTAMP), column("_c5", JSON));
+        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root","$");
+
+        transaction(config, fileInput(
+                "[",
+                "[]",
+                "\"embulk\"",
+                "10",
+                "true",
+                "false",
+                "null",
+                " ",
+                "]"
+        ));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(0, records.size());
+    }
+
+
+    @Test
+    public void throwDataException()
+            throws Exception
+    {
+        SchemaConfig schema = schema(
+                column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
+                column("_c3", STRING), column("_c4", TIMESTAMP), column("_c5", JSON));
+        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root", "$");
+
+        try {
+            transaction(config, fileInput(
+                    "\"not_map_value\""
+            ));
+            fail();
+        }
+        catch (Throwable t) {
+            assertTrue(t instanceof DataException);
+        }
+    }
+
+    @Test
+    public void writeNils()
+            throws Exception
+    {
+        SchemaConfig schema = schema(
+                column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
+                column("_c3", STRING), column("_c4", TIMESTAMP), column("_c5", JSON));
+        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root","$");
+
+        transaction(config, fileInput(
+                "[",
+                "{}",
+                "{\"_c0\":null,\"_c1\":null,\"_c2\":null}",
+                "{\"_c3\":null,\"_c4\":null,\"_c5\":null}",
+                "{}",
+                "]"
+        ));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(4, records.size());
+
+        for (Object[] record : records) {
+            for (int i = 0; i < 6; i++) {
+                assertNull(record[i]);
+            }
+        }
+    }
+
+
+    @Test
+    public void useNormal()
+            throws Exception
+    {
+        SchemaConfig schema = schema(
+                column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
+                column("_c3", STRING), column("_c4", TIMESTAMP, config().set("format", "%Y-%m-%d %H:%M:%S %Z")), column("_c5", JSON));
+        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root","$");
+
+        transaction(config, fileInput(
+                "[",
+                "{\"_c0\":true,\"_c1\":10,\"_c2\":0.1,\"_c3\":\"embulk\",\"_c4\":\"2016-01-01 00:00:00 UTC\",\"_c5\":{\"k\":\"v\"}}",
+                "[1, 2, 3]",
+                "{\"_c0\":false,\"_c1\":-10,\"_c2\":1.0,\"_c3\":\"エンバルク\",\"_c4\":\"2016-01-01 00:00:00 +0000\",\"_c5\":[\"e0\",\"e1\"]}",
+                "]"
+        ));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(2, records.size());
+
+        Object[] record;
+        {
+            record = records.get(0);
+            assertEquals(true, record[0]);
+            assertEquals(10L, record[1]);
+            assertEquals(0.1, (Double) record[2], 0.0001);
+            assertEquals("embulk", record[3]);
+            assertEquals(Timestamp.ofEpochSecond(1451606400L), record[4]);
+            assertEquals(newMap(newString("k"), newString("v")), record[5]);
+        }
+        {
+            record = records.get(1);
+            assertEquals(false, record[0]);
+            assertEquals(-10L, record[1]);
+            assertEquals(1.0, (Double) record[2], 0.0001);
+            assertEquals("エンバルク", record[3]);
+            assertEquals(Timestamp.ofEpochSecond(1451606400L), record[4]);
+            assertEquals(newArray(newString("e0"), newString("e1")), record[5]);
+        }
+
+        recreatePageOutput();
+    }
+
+
+    @Test
+    public void useNormalWithRootPath()
+            throws Exception
+    {
+        SchemaConfig schema = schema(
+                column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
+                column("_c3", STRING), column("_c4", TIMESTAMP, config().set("format", "%Y-%m-%d %H:%M:%S %Z")), column("_c5", JSON));
+        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root","$.records");
+
+        transaction(config, fileInput(
+                "{\"records\":[",
+                "{\"_c0\":true,\"_c1\":10,\"_c2\":0.1,\"_c3\":\"embulk\",\"_c4\":\"2016-01-01 00:00:00 UTC\",\"_c5\":{\"k\":\"v\"}}",
+                "[1, 2, 3]",
+                "{\"_c0\":false,\"_c1\":-10,\"_c2\":1.0,\"_c3\":\"エンバルク\",\"_c4\":\"2016-01-01 00:00:00 +0000\",\"_c5\":[\"e0\",\"e1\"]}",
+                "]}"
+        ));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(2, records.size());
+
+        Object[] record;
+        {
+            record = records.get(0);
+            assertEquals(true, record[0]);
+            assertEquals(10L, record[1]);
+            assertEquals(0.1, (Double) record[2], 0.0001);
+            assertEquals("embulk", record[3]);
+            assertEquals(Timestamp.ofEpochSecond(1451606400L), record[4]);
+            assertEquals(newMap(newString("k"), newString("v")), record[5]);
+        }
+        {
+            record = records.get(1);
+            assertEquals(false, record[0]);
+            assertEquals(-10L, record[1]);
+            assertEquals(1.0, (Double) record[2], 0.0001);
+            assertEquals("エンバルク", record[3]);
+            assertEquals(Timestamp.ofEpochSecond(1451606400L), record[4]);
+            assertEquals(newArray(newString("e0"), newString("e1")), record[5]);
+        }
+
+        recreatePageOutput();
+    }
+
 
     private FileInput fileInput(String... lines)
             throws Exception
