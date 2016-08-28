@@ -50,6 +50,7 @@ public class JsonpathParserPlugin
             extends Task, TimestampParser.Task
     {
         @Config("root")
+        @ConfigDefault("\"$\"")
         public String getRoot();
 
         @Config("columns")

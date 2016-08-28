@@ -103,7 +103,7 @@ public class TestJsonpathParserPlugin
         SchemaConfig schema = schema(
                 column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
                 column("_c3", STRING), column("_c4", TIMESTAMP), column("_c5", JSON));
-        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root", "$");
+        ConfigSource config = this.config.deepCopy().set("columns", schema);
 
         transaction(config, fileInput(
                 "[",
@@ -128,7 +128,7 @@ public class TestJsonpathParserPlugin
         SchemaConfig schema = schema(
                 column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
                 column("_c3", STRING), column("_c4", TIMESTAMP), column("_c5", JSON));
-        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root", "$");
+        ConfigSource config = this.config.deepCopy().set("columns", schema);
 
         try {
             transaction(config, fileInput(
@@ -148,7 +148,7 @@ public class TestJsonpathParserPlugin
         SchemaConfig schema = schema(
                 column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
                 column("_c3", STRING), column("_c4", TIMESTAMP), column("_c5", JSON));
-        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root", "$");
+        ConfigSource config = this.config.deepCopy().set("columns", schema);
 
         transaction(config, fileInput(
                 "[",
@@ -176,7 +176,7 @@ public class TestJsonpathParserPlugin
         SchemaConfig schema = schema(
                 column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
                 column("_c3", STRING), column("_c4", TIMESTAMP, config().set("format", "%Y-%m-%d %H:%M:%S %Z")), column("_c5", JSON));
-        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root", "$");
+        ConfigSource config = this.config.deepCopy().set("columns", schema);
 
         transaction(config, fileInput(
                 "[",
