@@ -15,7 +15,8 @@ import org.embulk.spi.time.TimestampParser;
 import org.msgpack.core.MessageTypeException;
 import org.msgpack.value.Value;
 
-public class ColumnVisitorImpl implements ColumnVisitor {
+public class ColumnVisitorImpl implements ColumnVisitor
+{
     protected final PluginTask task;
     protected final Schema schema;
     protected final PageBuilder pageBuilder;
