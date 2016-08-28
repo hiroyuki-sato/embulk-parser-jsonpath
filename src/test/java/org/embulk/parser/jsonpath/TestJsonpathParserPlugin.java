@@ -26,6 +26,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.embulk.spi.type.Types.BOOLEAN;
@@ -105,7 +107,7 @@ public class TestJsonpathParserPlugin
             sb.append(line).append("\n");
         }
 
-        ByteArrayInputStream in = new ByteArrayInputStream(sb.toString().getBytes());
+        ByteArrayInputStream in = new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8));
         return new InputStreamFileInput(runtime.getBufferAllocator(), provider(in));
     }
 
