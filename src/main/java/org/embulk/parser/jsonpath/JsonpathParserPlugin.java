@@ -79,13 +79,13 @@ public class JsonpathParserPlugin
             FileInput input, PageOutput output)
     {
         PluginTask task = taskSource.loadTask(PluginTask.class);
-        String json_root = task.getRoot();
+        String jsonRoot = task.getRoot();
 
         setColumnNameValues(schema);
 
-        logger.debug("JSONPath = " + json_root);
+        logger.debug("JSONPath = " + jsonRoot);
         final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getSchemaConfig());
-        final JsonParser json_parser = new JsonParser();
+        final JsonParser jsonParser = new JsonParser();
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
 
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
@@ -94,23 +94,23 @@ public class JsonpathParserPlugin
             try (FileInputInputStream is = new FileInputInputStream(input)) {
                 while (is.nextFile()) {
                     // TODO more efficient handling.
-                    String json = JsonPath.read(is, json_root).toString();
-                    Value value = json_parser.parse(json);
+                    String json = JsonPath.read(is, jsonRoot).toString();
+                    Value value = jsonParser.parse(json);
                     if (!value.isArrayValue()) {
                         throw new JsonRecordValidateException("Json string is not representing array value.");
                     }
 
-                    for (Value record_value : value.asArrayValue()) {
-                        if (!record_value.isMapValue()) {
-                            if(stopOnInvalidRecord) {
+                    for (Value recordValue : value.asArrayValue()) {
+                        if (!recordValue.isMapValue()) {
+                            if (stopOnInvalidRecord) {
                                 throw new JsonRecordValidateException("Json string is not representing map value.");
                             }
-                            logger.warn(String.format(ENGLISH,"Skipped invalid record  %s", record_value));
+                            logger.warn(String.format(ENGLISH, "Skipped invalid record  %s", recordValue));
                             continue;
                         }
 
-                        logger.debug("record_value = " + record_value.toString());
-                        final Map<Value, Value> record = record_value.asMapValue().map();
+                        logger.debug("recordValue = " + recordValue.toString());
+                        final Map<Value, Value> record = recordValue.asMapValue().map();
                         for (Column column : schema.getColumns()) {
                             Value v = record.get(getColumnNameValue(column));
                             visitor.setValue(v);
