@@ -3,15 +3,16 @@ in:
   path_prefix: example/input
   parser:
     type: jsonpath
-    root: "$.items"
+    root: "$.results"
+    default_timezone: "Asia/Tokyo"
     columns:
-      - { name: "pickup_copy", type: long }
-      - { name: "sticker_price", type: long }
-      - { name: "review_ranking_in_category", type: long }
-#      - { name: "review_ranking_in_category", type: long }
-      - { name: "stock", type: long }
-      - { name: "goods_id", type: long }
-#      - { name: "aaa", type: string }
-#      - { name: "bbb", type: string }
+      - { name: "name",          type: string }
+      - { name: "city",          type: string }
+      - { name: "street_name",   type: string }
+      - { name: "zip_code",      type: string }
+      - { name: "registered_at", type: timestamp, format: "%Y-%m-%d %H:%M:%S" }
+      - { name: "vegetarian",    type: boolean }
+      - { name: "age",           type: long }
+      - { name: "ratio",         type: double }
 out:
   type: stdout

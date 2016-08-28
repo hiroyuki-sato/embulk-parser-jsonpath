@@ -1,0 +1,8 @@
+in:
+  type: file
+  path_prefix: example/input
+  parser:
+    type: jsonpath
+    root: "$.results"
+out:
+  type: stdout
