@@ -29,7 +29,7 @@ public class ColumnVisitorImpl implements ColumnVisitor {
         this.task = task;
         this.schema = schema;
         this.pageBuilder = pageBuilder;
-        this.timestampParsers = timestampParsers;
+        this.timestampParsers = timestampParsers.clone();
         this.autoTypecasts = new Boolean[schema.size()];
         buildAutoTypecasts();
     }
