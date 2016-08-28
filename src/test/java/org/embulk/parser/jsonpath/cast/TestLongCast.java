@@ -39,4 +39,3 @@ public class TestLongCast
         assertEquals(expected, LongCast.asTimestamp(1));
     }
 }
-

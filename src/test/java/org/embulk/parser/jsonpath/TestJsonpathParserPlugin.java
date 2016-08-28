@@ -42,7 +42,6 @@ import static org.msgpack.value.ValueFactory.newArray;
 import static org.msgpack.value.ValueFactory.newMap;
 import static org.msgpack.value.ValueFactory.newString;
 
-
 public class TestJsonpathParserPlugin
 {
     @Rule
@@ -64,8 +63,6 @@ public class TestJsonpathParserPlugin
     {
         output = new MockPageOutput();
     }
-
-
 
     private ConfigSource config()
     {
@@ -122,7 +119,6 @@ public class TestJsonpathParserPlugin
         assertEquals(0, records.size());
     }
 
-
     @Test
     public void throwDataException()
             throws Exception
@@ -171,7 +167,6 @@ public class TestJsonpathParserPlugin
         }
     }
 
-
     @Test
     public void useNormal()
             throws Exception
@@ -215,7 +210,6 @@ public class TestJsonpathParserPlugin
         recreatePageOutput();
     }
 
-
     @Test
     public void useNormalWithRootPath()
             throws Exception
@@ -258,7 +252,6 @@ public class TestJsonpathParserPlugin
 
         recreatePageOutput();
     }
-
 
     private FileInput fileInput(String... lines)
             throws Exception
