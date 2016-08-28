@@ -20,7 +20,7 @@ public class ColumnVisitorImpl implements ColumnVisitor {
     protected final Schema schema;
     protected final PageBuilder pageBuilder;
     protected final TimestampParser[] timestampParsers;
-    protected final Boolean autoTypecasts[];
+    protected final Boolean[] autoTypecasts;
 
     protected Value value;
 
