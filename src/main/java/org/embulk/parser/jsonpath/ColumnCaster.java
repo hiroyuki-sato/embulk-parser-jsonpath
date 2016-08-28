@@ -12,7 +12,7 @@ import org.msgpack.value.Value;
 
 class ColumnCaster
 {
-    ColumnCaster() {}
+    private ColumnCaster() {}
 
     public static boolean asBoolean(Value value) throws DataException
     {

@@ -42,7 +42,6 @@ import static org.msgpack.value.ValueFactory.newArray;
 import static org.msgpack.value.ValueFactory.newMap;
 import static org.msgpack.value.ValueFactory.newString;
 
-
 public class TestJsonpathParserPlugin
 {
     @Rule
@@ -64,8 +63,6 @@ public class TestJsonpathParserPlugin
     {
         output = new MockPageOutput();
     }
-
-
 
     private ConfigSource config()
     {
@@ -104,7 +101,7 @@ public class TestJsonpathParserPlugin
         SchemaConfig schema = schema(
                 column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
                 column("_c3", STRING), column("_c4", TIMESTAMP), column("_c5", JSON));
-        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root","$");
+        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root", "$");
 
         transaction(config, fileInput(
                 "[",
@@ -121,7 +118,6 @@ public class TestJsonpathParserPlugin
         List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
         assertEquals(0, records.size());
     }
-
 
     @Test
     public void throwDataException()
@@ -150,7 +146,7 @@ public class TestJsonpathParserPlugin
         SchemaConfig schema = schema(
                 column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
                 column("_c3", STRING), column("_c4", TIMESTAMP), column("_c5", JSON));
-        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root","$");
+        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root", "$");
 
         transaction(config, fileInput(
                 "[",
@@ -171,7 +167,6 @@ public class TestJsonpathParserPlugin
         }
     }
 
-
     @Test
     public void useNormal()
             throws Exception
@@ -179,7 +174,7 @@ public class TestJsonpathParserPlugin
         SchemaConfig schema = schema(
                 column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
                 column("_c3", STRING), column("_c4", TIMESTAMP, config().set("format", "%Y-%m-%d %H:%M:%S %Z")), column("_c5", JSON));
-        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root","$");
+        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root", "$");
 
         transaction(config, fileInput(
                 "[",
@@ -215,7 +210,6 @@ public class TestJsonpathParserPlugin
         recreatePageOutput();
     }
 
-
     @Test
     public void useNormalWithRootPath()
             throws Exception
@@ -223,7 +217,7 @@ public class TestJsonpathParserPlugin
         SchemaConfig schema = schema(
                 column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
                 column("_c3", STRING), column("_c4", TIMESTAMP, config().set("format", "%Y-%m-%d %H:%M:%S %Z")), column("_c5", JSON));
-        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root","$.records");
+        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root", "$.records");
 
         transaction(config, fileInput(
                 "{\"records\":[",
@@ -258,7 +252,6 @@ public class TestJsonpathParserPlugin
 
         recreatePageOutput();
     }
-
 
     private FileInput fileInput(String... lines)
             throws Exception

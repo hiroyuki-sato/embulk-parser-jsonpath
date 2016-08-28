@@ -47,4 +47,3 @@ public class TestDoubleCast
         assertEquals(expected, DoubleCast.asTimestamp(1.5));
     }
 }
-
