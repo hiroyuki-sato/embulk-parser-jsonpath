@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.util.Map;
 
+import static java.util.Locale.ENGLISH;
 import static org.msgpack.value.ValueFactory.newString;
 
 public class JsonpathParserPlugin
@@ -57,6 +58,10 @@ public class JsonpathParserPlugin
         @Config("default_typecast")
         @ConfigDefault("true")
         Boolean getDefaultTypecast();
+
+        @Config("stop_on_invalid_record")
+        @ConfigDefault("false")
+        boolean getStopOnInvalidRecord();
     }
 
     @Override
@@ -81,6 +86,7 @@ public class JsonpathParserPlugin
         logger.debug("JSONPath = " + json_root);
         final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getSchemaConfig());
         final JsonParser json_parser = new JsonParser();
+        final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
 
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
             ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
@@ -96,7 +102,11 @@ public class JsonpathParserPlugin
 
                     for (Value record_value : value.asArrayValue()) {
                         if (!record_value.isMapValue()) {
-                            throw new JsonRecordValidateException("Json string is not representing map value.");
+                            if(stopOnInvalidRecord) {
+                                throw new JsonRecordValidateException("Json string is not representing map value.");
+                            }
+                            logger.warn(String.format(ENGLISH,"Skipped invalid record  %s", record_value));
+                            continue;
                         }
 
                         logger.debug("record_value = " + record_value.toString());
