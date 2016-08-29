@@ -24,7 +24,6 @@ dependencies {
     provided "org.embulk:embulk-core:0.8.13"
 
     compile 'com.jayway.jsonpath:json-path:2.2.0'
-//    compile 'org.msgpack:jackson-dataformat-msgpack:0.8.9'
 
     testCompile "junit:junit:4.+"
     testCompile  "org.embulk:embulk-core:0.8.13:tests"
@@ -96,7 +95,7 @@ Gem::Specification.new do |spec|
   spec.description   = %[Parses Jsonpath files read by other file input plugins.]
   spec.email         = ["hiroysato@gmail.com"]
   spec.licenses      = ["MIT"]
-  # TODO set this: spec.homepage      = "https://github.com/hiroyuki-sato/embulk-parser-jsonpath"
+  spec.homepage      = "https://github.com/hiroyuki-sato/embulk-parser-jsonpath"
 
   spec.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
   spec.test_files    = spec.files.grep(%r"^(test|spec)/")
