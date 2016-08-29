@@ -102,5 +102,6 @@ $ ./gradlew gem  # -t to watch change of files and rebuild continuously
 
 ## Acknowledgment
 
-I would like to express my special thanks to the developers of [embulk-parser-jsonl](https://github.com/shun0102/embulk-parser-jsonl) project.
+I would like to express my special thanks to the developers of [embulk-parser-jsonl](https://github.com/shun0102/embulk-parser-jsonl) and [embulk-filter-typecast](https://github.com/sonots/embulk-filter-typecast) projects.
+
 Almost codes copied from this project.
