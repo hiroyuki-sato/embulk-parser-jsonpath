@@ -104,6 +104,8 @@ Gem::Specification.new do |spec|
   #spec.add_dependency 'YOUR_GEM_DEPENDENCY', ['~> YOUR_GEM_DEPENDENCY_VERSION']
   spec.add_development_dependency 'bundler', ['~> 1.0']
   spec.add_development_dependency 'rake', ['>= 10.0']
+  spec.add_dependency 'jsonpath', ['~> 0.5.8'] # for guess
+  spec.add_dependency 'json', ['~> 2.0.2']     # for guess
 end
 /$)
     }
