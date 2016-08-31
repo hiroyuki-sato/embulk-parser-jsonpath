@@ -91,8 +91,8 @@ Gem::Specification.new do |spec|
   spec.name          = "${project.name}"
   spec.version       = "${project.version}"
   spec.authors       = ["Hiroyuki Sato"]
-  spec.summary       = %[Jsonpath parser plugin for Embulk]
-  spec.description   = %[Parses Jsonpath files read by other file input plugins.]
+  spec.summary       = %[JSON parser with JSONPath plugin for Embulk]
+  spec.description   = %[Parses JSON files with JSONPath read by other file input plugins.]
   spec.email         = ["hiroysato@gmail.com"]
   spec.licenses      = ["MIT"]
   spec.homepage      = "https://github.com/hiroyuki-sato/embulk-parser-jsonpath"
@@ -104,6 +104,8 @@ Gem::Specification.new do |spec|
   #spec.add_dependency 'YOUR_GEM_DEPENDENCY', ['~> YOUR_GEM_DEPENDENCY_VERSION']
   spec.add_development_dependency 'bundler', ['~> 1.0']
   spec.add_development_dependency 'rake', ['>= 10.0']
+  spec.add_dependency 'jsonpath', ['~> 0.5.8'] # for guess
+  spec.add_dependency 'json', ['~> 2.0.2']     # for guess
 end
 /$)
     }

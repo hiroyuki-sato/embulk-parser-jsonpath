@@ -5,7 +5,7 @@ The JSON with [JSONPath](http://goessner.net/articles/JsonPath/) parser plugin f
 ## Overview
 
 * **Plugin type**: parser
-* **Guess supported**: no (TODO)
+* **Guess supported**: yes
 
 ## Configuration
 
@@ -91,7 +91,7 @@ registered_at (timestamp) : 2014-06-30 19:25:27 UTC
 
 ```
 $ embulk gem install embulk-parser-jsonpath
-$ embulk guess -g jsonpath config.yml -o guessed.yml (not yet implemented)
+$ embulk guess -g jsonpath config.yml -o guessed.yml
 ```
 
 ## Build
