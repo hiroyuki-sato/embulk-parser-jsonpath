@@ -5,7 +5,7 @@ The JSON with [JSONPath](http://goessner.net/articles/JsonPath/) parser plugin f
 ## Overview
 
 * **Plugin type**: parser
-* **Guess supported**: yes
+* **Guess supported**: yes (A JSON data size supports up to 32KB. [#476](https://github.com/embulk/embulk/issues/476))
 
 ## Configuration
 
