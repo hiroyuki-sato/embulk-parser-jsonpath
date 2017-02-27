@@ -101,9 +101,9 @@ public class JsonpathParserPlugin
                     try {
                         value = jsonParser.parse(json);
                     }
-                    catch (Exception ex){
-                        logger.warn(String.format(Locale.ENGLISH,"Parse failed input data = '%s'",json));
-                        throw new DataException(String.format(Locale.ENGLISH,"Parse failed reason = %s, input data = '%s'",ex.getMessage(),json));
+                    catch (Exception ex) {
+                        logger.warn(String.format(Locale.ENGLISH, "Parse failed input data = '%s'", json));
+                        throw new DataException(String.format(Locale.ENGLISH, "Parse failed reason = %s, input data = '%s'", ex.getMessage(), json));
                     }
 
                     if (!value.isArrayValue()) {
