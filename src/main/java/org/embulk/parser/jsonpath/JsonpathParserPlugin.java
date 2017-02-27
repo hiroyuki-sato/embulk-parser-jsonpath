@@ -25,6 +25,7 @@ import org.msgpack.value.Value;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 
 import static java.util.Locale.ENGLISH;
@@ -84,7 +85,7 @@ public class JsonpathParserPlugin
 
         setColumnNameValues(schema);
 
-        logger.debug("JSONPath = " + jsonRoot);
+        logger.info("JSONPath = " + jsonRoot);
         final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getSchemaConfig());
         final JsonParser jsonParser = new JsonParser();
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
@@ -95,8 +96,16 @@ public class JsonpathParserPlugin
             try (FileInputInputStream is = new FileInputInputStream(input)) {
                 while (is.nextFile()) {
                     // TODO more efficient handling.
+                    Value value;
                     String json = JsonPath.read(is, jsonRoot).toString();
-                    Value value = jsonParser.parse(json);
+                    try {
+                        value = jsonParser.parse(json);
+                    }
+                    catch (Exception ex){
+                        logger.warn(String.format(Locale.ENGLISH,"Parse failed input data = '%s'",json));
+                        throw new DataException(String.format(Locale.ENGLISH,"Parse failed reason = %s, input data = '%s'",ex.getMessage(),json));
+                    }
+
                     if (!value.isArrayValue()) {
                         throw new JsonRecordValidateException("Json string is not representing array value.");
                     }
