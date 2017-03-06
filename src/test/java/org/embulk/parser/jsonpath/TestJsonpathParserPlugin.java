@@ -122,13 +122,77 @@ public class TestJsonpathParserPlugin
     }
 
     @Test
-    public void throwDataException()
+    public void skipBrokenJson()
             throws Exception
     {
         SchemaConfig schema = schema(
                 column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
                 column("_c3", STRING), column("_c4", TIMESTAMP), column("_c5", JSON));
         ConfigSource config = this.config.deepCopy().set("columns", schema);
+
+        transaction(config, fileInput("BROKEN"));
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(0, records.size());
+    }
+
+    @Test
+    public void skipBrokenColumn()
+            throws Exception
+    {
+        SchemaConfig schema = schema(column("_c1", TIMESTAMP));
+        ConfigSource config = this.config.deepCopy().set("columns", schema).
+                set("stop_on_invalid_record", false);
+
+        transaction(config, fileInput("{\"_c1\" : \"INVALID\"}"));
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(0, records.size());
+    }
+
+    @Test
+    public void stopOnBrokenJson()
+            throws Exception
+    {
+        SchemaConfig schema = schema(
+                column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
+                column("_c3", STRING), column("_c4", TIMESTAMP), column("_c5", JSON));
+        ConfigSource config = this.config.deepCopy().set("columns", schema).
+                set("stop_on_invalid_record", true);
+
+        try {
+            transaction(config, fileInput("BROKEN"));
+            fail();
+        }
+        catch (Throwable t) {
+            assertTrue(t instanceof DataException);
+        }
+    }
+
+    @Test
+    public void stopOnBrokenColumn()
+            throws Exception
+    {
+        SchemaConfig schema = schema(column("_c1", TIMESTAMP));
+        ConfigSource config = this.config.deepCopy().set("columns", schema).
+                set("stop_on_invalid_record", true);
+
+        try {
+            transaction(config, fileInput("{\"_c1\" : \"INVALID\"}"));
+            fail();
+        }
+        catch (Throwable t) {
+            assertTrue(t instanceof DataException);
+        }
+    }
+
+    @Test
+    public void throwDataException()
+            throws Exception
+    {
+        SchemaConfig schema = schema(
+                column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
+                column("_c3", STRING), column("_c4", TIMESTAMP), column("_c5", JSON));
+        ConfigSource config = this.config.deepCopy().set("columns", schema).
+                set("stop_on_invalid_record", true);
 
         try {
             transaction(config, fileInput(
