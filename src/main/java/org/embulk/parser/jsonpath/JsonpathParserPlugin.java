@@ -1,8 +1,10 @@
 package org.embulk.parser.jsonpath;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigSource;
@@ -17,6 +19,7 @@ import org.embulk.spi.PageOutput;
 import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
 import org.embulk.spi.SchemaConfig;
+import org.embulk.spi.json.JsonParseException;
 import org.embulk.spi.json.JsonParser;
 import org.embulk.spi.time.TimestampParser;
 import org.embulk.spi.util.FileInputInputStream;
@@ -93,47 +96,62 @@ public class JsonpathParserPlugin
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
             ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
 
-            try (FileInputInputStream is = new FileInputInputStream(input)) {
-                while (is.nextFile()) {
-                    // TODO more efficient handling.
-                    Value value;
-                    String json = JsonPath.read(is, jsonRoot).toString();
+            FileInputInputStream is = new FileInputInputStream(input);
+            while (is.nextFile()) {
+                Value value;
+                try {
+                    String json;
+                    try {
+                        json = JsonPath.read(is, jsonRoot).toString();
+                    }
+                    catch (IOException e) {
+                        throw Throwables.propagate(e);
+                    }
+                    catch (PathNotFoundException e) {
+                        throw new DataException(String.format(Locale.ENGLISH, "Failed to get json root reason = %s",
+                                e.getMessage()));
+                    }
+
                     try {
                         value = jsonParser.parse(json);
                     }
-                    catch (Exception ex) {
-                        logger.error(String.format(Locale.ENGLISH, "Parse failed input data = '%s'", json));
-                        throw new DataException(String.format(Locale.ENGLISH, "Parse failed reason = %s, input data = '%s'", ex.getMessage(), json));
+                    catch (JsonParseException e) {
+                        throw new DataException(String.format(Locale.ENGLISH, "Parse failed reason = %s, input data = '%s'",
+                                e.getMessage(), json));
                     }
 
                     if (!value.isArrayValue()) {
                         throw new JsonRecordValidateException("Json string is not representing array value.");
                     }
+                }
+                catch (DataException e) {
+                    skipOrThrow(e, stopOnInvalidRecord);
+                    continue;
+                }
 
-                    for (Value recordValue : value.asArrayValue()) {
-                        if (!recordValue.isMapValue()) {
-                            if (stopOnInvalidRecord) {
-                                throw new JsonRecordValidateException("Json string is not representing map value.");
-                            }
-                            logger.warn(String.format(ENGLISH, "Skipped invalid record  %s", recordValue));
-                            continue;
-                        }
+                for (Value recordValue : value.asArrayValue()) {
+                    if (!recordValue.isMapValue()) {
+                        skipOrThrow(new JsonRecordValidateException("Json string is not representing map value."),
+                                stopOnInvalidRecord);
+                        continue;
+                    }
 
-                        logger.debug("recordValue = " + recordValue.toString());
-                        final Map<Value, Value> record = recordValue.asMapValue().map();
+                    logger.debug("recordValue = " + recordValue.toString());
+                    final Map<Value, Value> record = recordValue.asMapValue().map();
+                    try {
                         for (Column column : schema.getColumns()) {
                             Value v = record.get(getColumnNameValue(column));
                             visitor.setValue(v);
                             column.visit(visitor);
                         }
-
-                        pageBuilder.addRecord();
                     }
+                    catch (DataException e) {
+                        skipOrThrow(e, stopOnInvalidRecord);
+                        continue;
+                    }
+
+                    pageBuilder.addRecord();
                 }
-            }
-            catch (IOException e) {
-                // TODO more efficient exception handling.
-                throw new DataException("catch IOException " + e);
             }
 
             pageBuilder.finish();
@@ -153,5 +171,13 @@ public class JsonpathParserPlugin
     private Value getColumnNameValue(Column column)
     {
         return columnNameValues.get(column.getName());
+    }
+
+    private void skipOrThrow(DataException cause, boolean stopOnInvalidRecord)
+    {
+        if (stopOnInvalidRecord) {
+            throw cause;
+        }
+        logger.warn(String.format(ENGLISH, "Skipped invalid record (%s)", cause));
     }
 }
