@@ -1,5 +1,9 @@
 # ChangeLog
 
+## 0.1.3 (2017-03-07)
+
+* Make enable to skip invalid records/columns(@takumakanari)
+
 ## 0.1.2 (2017-02-28)
 
 * Output error detail when json parse failed.
