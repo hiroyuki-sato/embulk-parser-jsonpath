@@ -1,29 +1,36 @@
 package org.embulk.parser.jsonpath;
 
-import com.google.common.base.Optional;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.PluginTask;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.TypecastColumnOption;
-
 import org.embulk.spi.Column;
 import org.embulk.spi.ColumnConfig;
 import org.embulk.spi.ColumnVisitor;
 import org.embulk.spi.PageBuilder;
 import org.embulk.spi.Schema;
 import org.embulk.spi.SchemaConfig;
+import org.embulk.spi.json.JsonParseException;
+import org.embulk.spi.json.JsonParser;
 import org.embulk.spi.time.Timestamp;
 import org.embulk.spi.time.TimestampParser;
 import org.msgpack.core.MessageTypeException;
-import org.msgpack.value.Value;
+
+import static org.msgpack.value.ValueFactory.newBoolean;
+import static org.msgpack.value.ValueFactory.newFloat;
+import static org.msgpack.value.ValueFactory.newInteger;
+import static org.msgpack.value.ValueFactory.newString;
 
 public class ColumnVisitorImpl implements ColumnVisitor
 {
+    private static final JsonParser JSON_PARSER = new JsonParser();
+
     protected final PluginTask task;
     protected final Schema schema;
     protected final PageBuilder pageBuilder;
     protected final TimestampParser[] timestampParsers;
     protected final Boolean[] autoTypecasts;
 
-    protected Value value;
+    protected JsonNode value;
 
     public ColumnVisitorImpl(PluginTask task, Schema schema, PageBuilder pageBuilder, TimestampParser[] timestampParsers)
     {
@@ -54,7 +61,7 @@ public class ColumnVisitorImpl implements ColumnVisitor
 //        }
     }
 
-    public void setValue(Value value)
+    public void setValue(JsonNode value)
     {
         this.value = value;
     }
@@ -67,7 +74,7 @@ public class ColumnVisitorImpl implements ColumnVisitor
         }
         else {
             try {
-                boolean booleanValue = autoTypecasts[column.getIndex()] ? ColumnCaster.asBoolean(value) : value.asBooleanValue().getBoolean();
+                boolean booleanValue = autoTypecasts[column.getIndex()] ? ColumnCaster.asBoolean(newBoolean(value.asBoolean())) : value.asBoolean();
                 pageBuilder.setBoolean(column, booleanValue);
             }
             catch (MessageTypeException e) {
@@ -84,7 +91,7 @@ public class ColumnVisitorImpl implements ColumnVisitor
         }
         else {
             try {
-                long longValue = autoTypecasts[column.getIndex()] ? ColumnCaster.asLong(value) : value.asIntegerValue().toLong();
+                long longValue = autoTypecasts[column.getIndex()] ? ColumnCaster.asLong(newInteger(value.asLong())) : value.asLong();
                 pageBuilder.setLong(column, longValue);
             }
             catch (MessageTypeException e) {
@@ -101,7 +108,7 @@ public class ColumnVisitorImpl implements ColumnVisitor
         }
         else {
             try {
-                double doubleValue = autoTypecasts[column.getIndex()] ? ColumnCaster.asDouble(value) : value.asFloatValue().toDouble();
+                double doubleValue = autoTypecasts[column.getIndex()] ? ColumnCaster.asDouble(newFloat(value.asDouble())) : value.asDouble();
                 pageBuilder.setDouble(column, doubleValue);
             }
             catch (MessageTypeException e) {
@@ -117,8 +124,9 @@ public class ColumnVisitorImpl implements ColumnVisitor
             pageBuilder.setNull(column);
         }
         else {
+            final String stringValue = valueAsString();
             try {
-                String string = autoTypecasts[column.getIndex()] ? ColumnCaster.asString(value) : value.asStringValue().toString();
+                String string = autoTypecasts[column.getIndex()] ? ColumnCaster.asString(newString(stringValue)) : stringValue;
                 pageBuilder.setString(column, string);
             }
             catch (MessageTypeException e) {
@@ -135,7 +143,7 @@ public class ColumnVisitorImpl implements ColumnVisitor
         }
         else {
             try {
-                Timestamp timestamp = ColumnCaster.asTimestamp(value, timestampParsers[column.getIndex()]);
+                Timestamp timestamp = ColumnCaster.asTimestamp(newString(value.asText()), timestampParsers[column.getIndex()]);
                 pageBuilder.setTimestamp(column, timestamp);
             }
             catch (MessageTypeException e) {
@@ -152,16 +160,21 @@ public class ColumnVisitorImpl implements ColumnVisitor
         }
         else {
             try {
-                pageBuilder.setJson(column, value);
+                pageBuilder.setJson(column, JSON_PARSER.parse(valueAsString()));
             }
-            catch (MessageTypeException e) {
+            catch (MessageTypeException|JsonParseException e) {
                 throw new JsonRecordValidateException(String.format("failed to get \"%s\" as Json", value), e);
             }
         }
     }
 
-    protected boolean isNil(Value v)
+    protected boolean isNil(JsonNode v)
     {
-        return v == null || v.isNilValue();
+        return v == null || v.isNull();
+    }
+
+    private String valueAsString()
+    {
+        return value.isTextual() ? value.asText() : value.toString();
     }
 }
