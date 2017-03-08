@@ -11,6 +11,7 @@ import org.embulk.config.ConfigSource;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
 import org.embulk.spi.Column;
+import org.embulk.spi.ColumnConfig;
 import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInput;
@@ -42,6 +43,18 @@ public class JsonpathParserPlugin
 
     private Map<String, Value> columnNameValues;
 
+    public interface JsonpathColumnOption
+            extends Task
+    {
+        @Config("root")
+        @ConfigDefault("\"$\"")
+        public String getRoot();
+
+        @Config("path")
+        @ConfigDefault("null")
+        public Optional<String> getPath();
+
+    }
     public interface TypecastColumnOption
             extends Task
     {
@@ -92,6 +105,11 @@ public class JsonpathParserPlugin
         final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getSchemaConfig());
         final JsonParser jsonParser = new JsonParser();
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
+
+        for( ColumnConfig config : task.getSchemaConfig().getColumns() ){
+            JsonpathColumnOption option = config.getOption().loadConfig(JsonpathColumnOption.class);
+            logger.info(String.format(Locale.ENGLISH,"root = %s, path = %s",option.getRoot(),option.getPath().or("null")));
+        }
 
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
             ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
