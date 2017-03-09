@@ -1,16 +1,22 @@
 package org.embulk.parser.jsonpath;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.InvalidJsonException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
+import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
+import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
 import org.embulk.spi.Column;
+import org.embulk.spi.ColumnConfig;
 import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInput;
@@ -19,20 +25,16 @@ import org.embulk.spi.PageOutput;
 import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
 import org.embulk.spi.SchemaConfig;
-import org.embulk.spi.json.JsonParseException;
-import org.embulk.spi.json.JsonParser;
 import org.embulk.spi.time.TimestampParser;
 import org.embulk.spi.util.FileInputInputStream;
 import org.embulk.spi.util.Timestamps;
-import org.msgpack.value.Value;
 import org.slf4j.Logger;
 
-import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
 
+import static java.lang.String.format;
 import static java.util.Locale.ENGLISH;
-import static org.msgpack.value.ValueFactory.newString;
 
 public class JsonpathParserPlugin
         implements ParserPlugin
@@ -40,14 +42,18 @@ public class JsonpathParserPlugin
 
     private static final Logger logger = Exec.getLogger(JsonpathParserPlugin.class);
 
-    private Map<String, Value> columnNameValues;
+    private static final Configuration JSON_PATH_CONFIG = Configuration
+            .builder()
+            .mappingProvider(new JacksonMappingProvider())
+            .jsonProvider(new JacksonJsonNodeJsonProvider())
+            .build();
 
     public interface TypecastColumnOption
             extends Task
     {
         @Config("typecast")
         @ConfigDefault("null")
-        public Optional<Boolean> getTypecast();
+        Optional<Boolean> getTypecast();
     }
 
     public interface PluginTask
@@ -55,7 +61,7 @@ public class JsonpathParserPlugin
     {
         @Config("root")
         @ConfigDefault("\"$\"")
-        public String getRoot();
+        String getRoot();
 
         @Config("columns")
         SchemaConfig getSchemaConfig();
@@ -67,6 +73,15 @@ public class JsonpathParserPlugin
         @Config("stop_on_invalid_record")
         @ConfigDefault("false")
         boolean getStopOnInvalidRecord();
+    }
+
+    public interface JsonpathColumnOption
+            extends Task
+    {
+        @Config("path")
+        @ConfigDefault("null")
+        Optional<String> getPath();
+
     }
 
     @Override
@@ -86,11 +101,9 @@ public class JsonpathParserPlugin
         PluginTask task = taskSource.loadTask(PluginTask.class);
         String jsonRoot = task.getRoot();
 
-        setColumnNameValues(schema);
-
         logger.info("JSONPath = " + jsonRoot);
         final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getSchemaConfig());
-        final JsonParser jsonParser = new JsonParser();
+        final Map<Column, String> jsonPathMap = createJsonPathMap(task, schema);
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
 
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
@@ -98,59 +111,55 @@ public class JsonpathParserPlugin
 
             FileInputInputStream is = new FileInputInputStream(input);
             while (is.nextFile()) {
-                Value value;
+                final JsonNode json;
                 try {
-                    String json;
-                    try {
-                        json = JsonPath.read(is, jsonRoot).toString();
-                    }
-                    catch (IOException e) {
-                        throw Throwables.propagate(e);
-                    }
-                    catch (PathNotFoundException e) {
-                        throw new DataException(String.format(Locale.ENGLISH, "Failed to get json root reason = %s",
-                                e.getMessage()));
-                    }
-
-                    try {
-                        value = jsonParser.parse(json);
-                    }
-                    catch (JsonParseException e) {
-                        throw new DataException(String.format(Locale.ENGLISH, "Parse failed reason = %s, input data = '%s'",
-                                e.getMessage(), json));
-                    }
-
-                    if (!value.isArrayValue()) {
-                        throw new JsonRecordValidateException("Json string is not representing array value.");
-                    }
+                    json = JsonPath.using(JSON_PATH_CONFIG).parse(is).read(jsonRoot, JsonNode.class);
                 }
-                catch (DataException e) {
-                    skipOrThrow(e, stopOnInvalidRecord);
+                catch (PathNotFoundException e) {
+                    skipOrThrow(new DataException(format(Locale.ENGLISH,
+                            "Failed to get root json path='%s'", jsonRoot)), stopOnInvalidRecord);
+                    continue;
+                }
+                catch (InvalidJsonException e) {
+                    skipOrThrow(new DataException(e), stopOnInvalidRecord);
                     continue;
                 }
 
-                for (Value recordValue : value.asArrayValue()) {
-                    if (!recordValue.isMapValue()) {
-                        skipOrThrow(new JsonRecordValidateException("Json string is not representing map value."),
-                                stopOnInvalidRecord);
-                        continue;
-                    }
+                if (!json.isArray()) {
+                    skipOrThrow(new JsonRecordValidateException(format(Locale.ENGLISH,
+                            "Json string is not representing array value json='%s'", json)), stopOnInvalidRecord);
+                    continue;
+                }
 
-                    logger.debug("recordValue = " + recordValue.toString());
-                    final Map<Value, Value> record = recordValue.asMapValue().map();
+                for (JsonNode recordValue : json) {
                     try {
+                        if (recordValue.getNodeType() != JsonNodeType.OBJECT) {
+                            throw new JsonRecordValidateException(format(Locale.ENGLISH,
+                                    "Json string is not representing map value json='%s'", recordValue));
+                        }
+
                         for (Column column : schema.getColumns()) {
-                            Value v = record.get(getColumnNameValue(column));
-                            visitor.setValue(v);
+                            JsonNode value = null;
+                            if (jsonPathMap.containsKey(column)) {
+                                try {
+                                    value = JsonPath.using(JSON_PATH_CONFIG).parse(recordValue).read(jsonPathMap.get(column));
+                                }
+                                catch (PathNotFoundException e) {
+                                    // pass (value is nullable)
+                                }
+                            } else {
+                                value = recordValue.get(column.getName());
+                            }
+                            visitor.setValue(value);
                             column.visit(visitor);
                         }
+
+                        pageBuilder.addRecord();
                     }
                     catch (DataException e) {
                         skipOrThrow(e, stopOnInvalidRecord);
                         continue;
                     }
-
-                    pageBuilder.addRecord();
                 }
             }
 
@@ -158,19 +167,17 @@ public class JsonpathParserPlugin
         }
     }
 
-    private void setColumnNameValues(Schema schema)
+    private Map<Column, String> createJsonPathMap(PluginTask task, Schema schema)
     {
-        ImmutableMap.Builder<String, Value> builder = ImmutableMap.builder();
-        for (Column column : schema.getColumns()) {
-            String name = column.getName();
-            builder.put(name, newString(name));
+        ImmutableMap.Builder<Column, String> builder = ImmutableMap.builder();
+        for (int i = 0; i < schema.size(); i++) {
+            ColumnConfig config  = task.getSchemaConfig().getColumn(i);
+            JsonpathColumnOption option = config.getOption().loadConfig(JsonpathColumnOption.class);
+            if (option.getPath().isPresent()) {
+                builder.put(schema.getColumn(i), option.getPath().get());
+            }
         }
-        columnNameValues = builder.build();
-    }
-
-    private Value getColumnNameValue(Column column)
-    {
-        return columnNameValues.get(column.getName());
+        return builder.build();
     }
 
     private void skipOrThrow(DataException cause, boolean stopOnInvalidRecord)

@@ -26,7 +26,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -216,9 +215,9 @@ public class TestJsonpathParserPlugin
 
         transaction(config, fileInput(
                 "[",
-                "{}",
-                "{\"_c0\":null,\"_c1\":null,\"_c2\":null}",
-                "{\"_c3\":null,\"_c4\":null,\"_c5\":null}",
+                "{},",
+                "{\"_c0\":null,\"_c1\":null,\"_c2\":null},",
+                "{\"_c3\":null,\"_c4\":null,\"_c5\":null},",
                 "{}",
                 "]"
         ));
@@ -244,8 +243,8 @@ public class TestJsonpathParserPlugin
 
         transaction(config, fileInput(
                 "[",
-                "{\"_c0\":true,\"_c1\":10,\"_c2\":0.1,\"_c3\":\"embulk\",\"_c4\":\"2016-01-01 00:00:00 UTC\",\"_c5\":{\"k\":\"v\"}}",
-                "[1, 2, 3]",
+                "{\"_c0\":true,\"_c1\":10,\"_c2\":0.1,\"_c3\":\"embulk\",\"_c4\":\"2016-01-01 00:00:00 UTC\",\"_c5\":{\"k\":\"v\"}},",
+                "[1, 2, 3],",
                 "{\"_c0\":false,\"_c1\":-10,\"_c2\":1.0,\"_c3\":\"エンバルク\",\"_c4\":\"2016-01-01 00:00:00 +0000\",\"_c5\":[\"e0\",\"e1\"]}",
                 "]"
         ));
@@ -287,8 +286,8 @@ public class TestJsonpathParserPlugin
 
         transaction(config, fileInput(
                 "{\"records\":[",
-                "{\"_c0\":true,\"_c1\":10,\"_c2\":0.1,\"_c3\":\"embulk\",\"_c4\":\"2016-01-01 00:00:00 UTC\",\"_c5\":{\"k\":\"v\"}}",
-                "[1, 2, 3]",
+                "{\"_c0\":true,\"_c1\":10,\"_c2\":0.1,\"_c3\":\"embulk\",\"_c4\":\"2016-01-01 00:00:00 UTC\",\"_c5\":{\"k\":\"v\"}},",
+                "[1, 2, 3],",
                 "{\"_c0\":false,\"_c1\":-10,\"_c2\":1.0,\"_c3\":\"エンバルク\",\"_c4\":\"2016-01-01 00:00:00 +0000\",\"_c5\":[\"e0\",\"e1\"]}",
                 "]}"
         ));
@@ -317,6 +316,81 @@ public class TestJsonpathParserPlugin
         }
 
         recreatePageOutput();
+    }
+
+    @Test
+    public void useJsonPath()
+            throws Exception
+    {
+        SchemaConfig schema = schema(
+                column("__c0", BOOLEAN, config().set("path", "$._c0")), column("__c1", LONG, config().set("path", "$._c1")),
+                column("__c2", DOUBLE, config().set("path", "$._c2")), column("__c3", STRING, config().set("path", "$._c3")),
+                column("__c4", TIMESTAMP, config().set("format", "%Y-%m-%d %H:%M:%S %Z").set("path", "$._c4")),
+                column("__c5", JSON, config().set("path", "$._c5")));
+        ConfigSource config = this.config.deepCopy().set("columns", schema);
+
+        transaction(config, fileInput(
+                "[",
+                "{\"_c0\":true,\"_c1\":10,\"_c2\":0.1,\"_c3\":\"embulk\",\"_c4\":\"2016-01-01 00:00:00 UTC\",\"_c5\":{\"k\":\"v\"}},",
+                "[1, 2, 3],",
+                "{\"_c0\":false,\"_c1\":-10,\"_c2\":1.0,\"_c3\":\"エンバルク\",\"_c4\":\"2016-01-01 00:00:00 +0000\",\"_c5\":[\"e0\",\"e1\"]}",
+                "]"
+        ));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(2, records.size());
+
+        Object[] record;
+        {
+            record = records.get(0);
+            assertEquals(true, record[0]);
+            assertEquals(10L, record[1]);
+            assertEquals(0.1, (Double) record[2], 0.0001);
+            assertEquals("embulk", record[3]);
+            assertEquals(Timestamp.ofEpochSecond(1451606400L), record[4]);
+            assertEquals(newMap(newString("k"), newString("v")), record[5]);
+        }
+        {
+            record = records.get(1);
+            assertEquals(false, record[0]);
+            assertEquals(-10L, record[1]);
+            assertEquals(1.0, (Double) record[2], 0.0001);
+            assertEquals("エンバルク", record[3]);
+            assertEquals(Timestamp.ofEpochSecond(1451606400L), record[4]);
+            assertEquals(newArray(newString("e0"), newString("e1")), record[5]);
+        }
+
+        recreatePageOutput();
+    }
+
+    @Test
+    public void writeNilsWithJsonPath()
+            throws Exception
+    {
+        SchemaConfig schema = schema(
+                column("__c0", BOOLEAN, config().set("path", "$._c0")), column("__c1", LONG, config().set("path", "$._c1")),
+                column("__c2", DOUBLE, config().set("path", "$._c2")), column("__c3", STRING, config().set("path", "$._c3")),
+                column("__c4", TIMESTAMP, config().set("format", "%Y-%m-%d %H:%M:%S %Z").set("path", "$._c4")),
+                column("__c5", JSON, config().set("path", "$._c5")));
+        ConfigSource config = this.config.deepCopy().set("columns", schema);
+
+        transaction(config, fileInput(
+                "[",
+                "{},",
+                "{\"_c0\":null,\"_c1\":null,\"_c2\":null},",
+                "{\"_c3\":null,\"_c4\":null,\"_c5\":null},",
+                "{}",
+                "]"
+        ));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(4, records.size());
+
+        for (Object[] record : records) {
+            for (int i = 0; i < 6; i++) {
+                assertNull(record[i]);
+            }
+        }
     }
 
     private FileInput fileInput(String... lines)
