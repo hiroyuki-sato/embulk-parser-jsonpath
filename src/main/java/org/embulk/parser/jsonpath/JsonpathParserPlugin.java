@@ -198,14 +198,11 @@ public class JsonpathParserPlugin
     // this method is to keep the backward compatibility of 'schema' option.
     private SchemaConfig getSchemaConfig(PluginTask task)
     {
-        if (task.getOldSchemaConfig().isPresent()) {
-            logger.warn("Please use 'columns' option instead of 'schema' because the 'schema' option is deprecated. The next version will stop 'schema' option support.");
-        }
-
         if (task.getSchemaConfig().isPresent()) {
             return task.getSchemaConfig().get();
         }
         else if (task.getOldSchemaConfig().isPresent()) {
+            logger.warn("Please use 'columns' option instead of 'schema' because the 'schema' option is deprecated. The next version will stop 'schema' option support.");
             return task.getOldSchemaConfig().get();
         }
         else {
