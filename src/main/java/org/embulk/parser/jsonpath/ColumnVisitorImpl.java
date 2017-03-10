@@ -2,6 +2,7 @@ package org.embulk.parser.jsonpath;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.PluginTask;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.TypecastColumnOption;
 import org.embulk.spi.Column;
@@ -16,6 +17,9 @@ import org.embulk.spi.time.Timestamp;
 import org.embulk.spi.time.TimestampParser;
 import org.msgpack.core.MessageTypeException;
 
+import java.util.List;
+
+import static java.lang.String.format;
 import static org.msgpack.value.ValueFactory.newBoolean;
 import static org.msgpack.value.ValueFactory.newFloat;
 import static org.msgpack.value.ValueFactory.newInteger;
@@ -25,6 +29,8 @@ public class ColumnVisitorImpl
         implements ColumnVisitor
 {
     private static final JsonParser JSON_PARSER = new JsonParser();
+    private static final List<String> BOOL_TRUE_STRINGS = ImmutableList.of("true", "1", "yes");
+    private static final List<String> BOOL_FALSE_STRINGS = ImmutableList.of("false", "0", "no");
 
     protected final PluginTask task;
     protected final Schema schema;
@@ -73,15 +79,32 @@ public class ColumnVisitorImpl
     {
         if (isNil(value)) {
             pageBuilder.setNull(column);
+            return;
+        }
+
+        final boolean val;
+        if (value.isBoolean()) {
+            val = value.asBoolean();
         }
         else {
-            try {
-                boolean booleanValue = autoTypecasts[column.getIndex()] ? ColumnCaster.asBoolean(newBoolean(value.asBoolean())) : value.asBoolean();
-                pageBuilder.setBoolean(column, booleanValue);
+            String stringValue = valueAsString().toLowerCase();
+            if (BOOL_TRUE_STRINGS.contains(stringValue)) {
+                val = true;
             }
-            catch (MessageTypeException e) {
-                throw new JsonRecordValidateException(String.format("failed to get \"%s\" as Boolean", value), e);
+            else if (BOOL_FALSE_STRINGS.contains(stringValue)) {
+                val = false;
             }
+            else {
+                throw new JsonRecordValidateException(format("can not convert '%s' to Boolean", value));
+            }
+        }
+
+        try {
+            boolean booleanValue = autoTypecasts[column.getIndex()] ? ColumnCaster.asBoolean(newBoolean(val)) : val;
+            pageBuilder.setBoolean(column, booleanValue);
+        }
+        catch (MessageTypeException e) {
+            throw new JsonRecordValidateException(format("failed to get \"%s\" as Boolean", value), e);
         }
     }
 
@@ -97,7 +120,7 @@ public class ColumnVisitorImpl
                 pageBuilder.setLong(column, longValue);
             }
             catch (MessageTypeException e) {
-                throw new JsonRecordValidateException(String.format("failed to get \"%s\" as Long", value), e);
+                throw new JsonRecordValidateException(format("failed to get \"%s\" as Long", value), e);
             }
         }
     }
@@ -114,7 +137,7 @@ public class ColumnVisitorImpl
                 pageBuilder.setDouble(column, doubleValue);
             }
             catch (MessageTypeException e) {
-                throw new JsonRecordValidateException(String.format("failed get \"%s\" as Double", value), e);
+                throw new JsonRecordValidateException(format("failed get \"%s\" as Double", value), e);
             }
         }
     }
@@ -132,7 +155,7 @@ public class ColumnVisitorImpl
                 pageBuilder.setString(column, string);
             }
             catch (MessageTypeException e) {
-                throw new JsonRecordValidateException(String.format("failed to get \"%s\" as String", value), e);
+                throw new JsonRecordValidateException(format("failed to get \"%s\" as String", value), e);
             }
         }
     }
@@ -149,7 +172,7 @@ public class ColumnVisitorImpl
                 pageBuilder.setTimestamp(column, timestamp);
             }
             catch (MessageTypeException e) {
-                throw new JsonRecordValidateException(String.format("failed to get \"%s\" as Timestamp", value), e);
+                throw new JsonRecordValidateException(format("failed to get \"%s\" as Timestamp", value), e);
             }
         }
     }
@@ -165,7 +188,7 @@ public class ColumnVisitorImpl
                 pageBuilder.setJson(column, JSON_PARSER.parse(valueAsString()));
             }
             catch (MessageTypeException | JsonParseException e) {
-                throw new JsonRecordValidateException(String.format("failed to get \"%s\" as Json", value), e);
+                throw new JsonRecordValidateException(format("failed to get \"%s\" as Json", value), e);
             }
         }
     }

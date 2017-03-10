@@ -36,6 +36,7 @@ import static org.embulk.spi.type.Types.LONG;
 import static org.embulk.spi.type.Types.STRING;
 import static org.embulk.spi.type.Types.TIMESTAMP;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -159,6 +160,47 @@ public class TestJsonpathParserPlugin
 
         try {
             transaction(config, fileInput("BROKEN"));
+            fail();
+        }
+        catch (Throwable t) {
+            assertTrue(t instanceof DataException);
+        }
+    }
+
+    @Test
+    public void booleanStrings()
+            throws Exception
+    {
+        SchemaConfig schema = schema(column("_c1", BOOLEAN), column("_c2", BOOLEAN),
+                column("_c3", BOOLEAN), column("_c4", BOOLEAN), column("_c5", BOOLEAN),
+                column("_c6", BOOLEAN));
+        ConfigSource config = this.config.deepCopy().set("columns", schema);
+
+        transaction(config, fileInput("[{\"_c1\" : \"yes\", \"_c2\" : \"true\", \"_c3\" : \"1\",",
+                "\"_c4\" : \"no\", \"_c5\" : \"false\", \"_c6\" : \"0\"}]"));
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(1, records.size());
+
+        Object[] record = records.get(0);
+        for (int i = 0; i < 2; i++) {
+            assertTrue((boolean) record[i]);
+        }
+        for (int i = 3; i < 5; i++) {
+            assertFalse((boolean) record[i]);
+        }
+    }
+
+    @Test
+    public void invalidBooleanString()
+            throws Exception
+    {
+        SchemaConfig schema = schema(column("_c1", BOOLEAN));
+        ConfigSource config = this.config.deepCopy().set("columns", schema).
+                set("stop_on_invalid_record", true);
+
+        try {
+            transaction(config,
+                    fileInput("[{\"_c1\" : \"INVALID\"}]"));
             fail();
         }
         catch (Throwable t) {
