@@ -1,6 +1,7 @@
 package org.embulk.parser.jsonpath;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Optional;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.PluginTask;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.TypecastColumnOption;
 import org.embulk.spi.Column;
@@ -20,7 +21,8 @@ import static org.msgpack.value.ValueFactory.newFloat;
 import static org.msgpack.value.ValueFactory.newInteger;
 import static org.msgpack.value.ValueFactory.newString;
 
-public class ColumnVisitorImpl implements ColumnVisitor
+public class ColumnVisitorImpl
+        implements ColumnVisitor
 {
     private static final JsonParser JSON_PARSER = new JsonParser();
 
@@ -48,17 +50,17 @@ public class ColumnVisitorImpl implements ColumnVisitor
             this.autoTypecasts[column.getIndex()] = task.getDefaultTypecast();
         }
 
-//        Optional<SchemaConfig> schemaConfig = task.getColumns();
-        SchemaConfig schemaConfig = task.getSchemaConfig();
+        // typecast option supports `columns` only.
+        Optional<SchemaConfig> schemaConfig = task.getSchemaConfig();
 
-//        if (schemaConfig.isPresent()) {
-        for (ColumnConfig columnConfig : schemaConfig.getColumns()) {
-            TypecastColumnOption columnOption = columnConfig.getOption().loadConfig(TypecastColumnOption.class);
-            Boolean autoTypecast = columnOption.getTypecast().or(task.getDefaultTypecast());
-            Column column = schema.lookupColumn(columnConfig.getName());
-            this.autoTypecasts[column.getIndex()] = autoTypecast;
+        if (schemaConfig.isPresent()) {
+            for (ColumnConfig columnConfig : schemaConfig.get().getColumns()) {
+                TypecastColumnOption columnOption = columnConfig.getOption().loadConfig(TypecastColumnOption.class);
+                Boolean autoTypecast = columnOption.getTypecast().or(task.getDefaultTypecast());
+                Column column = schema.lookupColumn(columnConfig.getName());
+                this.autoTypecasts[column.getIndex()] = autoTypecast;
+            }
         }
-//        }
     }
 
     public void setValue(JsonNode value)
@@ -162,7 +164,7 @@ public class ColumnVisitorImpl implements ColumnVisitor
             try {
                 pageBuilder.setJson(column, JSON_PARSER.parse(valueAsString()));
             }
-            catch (MessageTypeException|JsonParseException e) {
+            catch (MessageTypeException | JsonParseException e) {
                 throw new JsonRecordValidateException(String.format("failed to get \"%s\" as Json", value), e);
             }
         }

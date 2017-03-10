@@ -12,6 +12,7 @@ import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
+import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
@@ -64,7 +65,13 @@ public class JsonpathParserPlugin
         String getRoot();
 
         @Config("columns")
-        SchemaConfig getSchemaConfig();
+        @ConfigDefault("null")
+        Optional<SchemaConfig> getSchemaConfig();
+
+        @Config("schema")
+        @ConfigDefault("null")
+        @Deprecated
+        Optional<SchemaConfig> getOldSchemaConfig();
 
         @Config("default_typecast")
         @ConfigDefault("true")
@@ -81,7 +88,6 @@ public class JsonpathParserPlugin
         @Config("path")
         @ConfigDefault("null")
         Optional<String> getPath();
-
     }
 
     @Override
@@ -89,7 +95,7 @@ public class JsonpathParserPlugin
     {
         PluginTask task = config.loadConfig(PluginTask.class);
 
-        Schema schema = task.getSchemaConfig().toSchema();
+        Schema schema = getSchemaConfig(task).toSchema();
 
         control.run(task.dump(), schema);
     }
@@ -102,7 +108,7 @@ public class JsonpathParserPlugin
         String jsonRoot = task.getRoot();
 
         logger.info("JSONPath = " + jsonRoot);
-        final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getSchemaConfig());
+        final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, getSchemaConfig(task));
         final Map<Column, String> jsonPathMap = createJsonPathMap(task, schema);
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
 
@@ -147,7 +153,8 @@ public class JsonpathParserPlugin
                                 catch (PathNotFoundException e) {
                                     // pass (value is nullable)
                                 }
-                            } else {
+                            }
+                            else {
                                 value = recordValue.get(column.getName());
                             }
                             visitor.setValue(value);
@@ -171,7 +178,7 @@ public class JsonpathParserPlugin
     {
         ImmutableMap.Builder<Column, String> builder = ImmutableMap.builder();
         for (int i = 0; i < schema.size(); i++) {
-            ColumnConfig config  = task.getSchemaConfig().getColumn(i);
+            ColumnConfig config = getSchemaConfig(task).getColumn(i);
             JsonpathColumnOption option = config.getOption().loadConfig(JsonpathColumnOption.class);
             if (option.getPath().isPresent()) {
                 builder.put(schema.getColumn(i), option.getPath().get());
@@ -186,5 +193,20 @@ public class JsonpathParserPlugin
             throw cause;
         }
         logger.warn(String.format(ENGLISH, "Skipped invalid record (%s)", cause));
+    }
+
+    // this method is to keep the backward compatibility of 'schema' option.
+    private SchemaConfig getSchemaConfig(PluginTask task)
+    {
+        if (task.getSchemaConfig().isPresent()) {
+            return task.getSchemaConfig().get();
+        }
+        else if (task.getOldSchemaConfig().isPresent()) {
+            logger.warn("Please use 'columns' option instead of 'schema' because the 'schema' option is deprecated. The next version will stop 'schema' option support.");
+            return task.getOldSchemaConfig().get();
+        }
+        else {
+            throw new ConfigException("Attribute 'columns' is required but not set");
+        }
     }
 }
