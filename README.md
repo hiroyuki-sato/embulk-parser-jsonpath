@@ -17,7 +17,18 @@ The JSON with [JSONPath](http://goessner.net/articles/JsonPath/) parser plugin f
 * **default_timestamp_format**: Default timestamp format of the timestamp (string, default: `%Y-%m-%d %H:%M:%S.%N %z`)
 * **default_typecast**: Specify whether to cast values automatically to the specified types or not (boolean, default: true)
 
+### columns
+
+* **name**: Name of the column (string, required)
+* **type**: Type of the column (string, required)
+* **timezone**: Timezone of the timestamp if type is timestamp (string, default: default_timestamp)
+* **format**: Format of the timestamp if type is timestamp (string, default: default_format)
+* **typecast**: Whether cast values or not (boolean, default: default_typecast)
+* **path**: JSON ppath for specific column. (string, default: `null`)
+
 ## Example
+
+### Basic Usage
 
 ```json
 {
@@ -88,11 +99,103 @@ registered_at (timestamp) : 2014-06-30 19:25:27 UTC
           age (     long) : 73
         ratio (   double) : 50.608
 ```
+### Handle more complicated json
+
+
+If you want to handle more complicated json, you can specify jsonpath to also **path** in columns section like as follows:
+
+```json
+{
+    "result" : "success",
+    "students" : [
+      { "names" : ["John", "Lennon"], "age" : 10 },
+      { "names" : ["Paul", "Maccartney"], "age" : 10 }
+    ]
+}
+```
+
+```yaml
+root: $.students
+columns:
+  - {name: firstName, type: string, path: "names[0]"}
+  - {name: lastName, type: string, path: "names[1]"}
+```
+
+In this case, names[0] will be firstName of schema and names[1] will be lastName.
+
+## Guess
+
+This plugin supports minimal `guess` feature.  You don't have to write `parser:` section in the configuration file.
+After writing `in:` section, you can let embulk guess `parser:` section using this command:
 
 ```
 $ embulk gem install embulk-parser-jsonpath
 $ embulk guess -g jsonpath config.yml -o guessed.yml
 ```
+
+### Example
+
+If you want to `guess` the following JSON file,
+(This JSON data start with array)
+You don't have to need `parser section`.
+
+```json
+[
+  {
+    "name": "Hugh Rutherford",
+    "city": "Mitchellfurt",
+    "street_name": "Ondricka Island",
+    "zip_code": "75232",
+    "registered_at": "2015-09-09 05:28:45",
+    "vegetarian": true,
+    "age": 44,
+    "ratio": 79.092
+  }
+]
+```
+
+```yaml
+in:
+  type: file
+  path_prefix: example/hoge
+out:
+  type: stdout
+```
+
+However, If a JSON data doesn't start with array,
+You have to specify `root` parameter explicitly.
+
+```json
+{
+  "count": 100,
+  "page": 1,
+  "results": [
+    {
+      "name": "Hugh Rutherford",
+      "city": "Mitchellfurt",
+      "street_name": "Ondricka Island",
+      "zip_code": "75232",
+      "registered_at": "2015-09-09 05:28:45",
+      "vegetarian": true,
+      "age": 44,
+      "ratio": 79.092
+    }
+  ]
+}
+```
+
+
+```yaml
+in:
+  type: file
+  path_prefix: example/input
+  parser:
+    type: jsonpath
+    root: "$.results"
+out:
+  type: stdout
+```
+
 
 ## Build
 
