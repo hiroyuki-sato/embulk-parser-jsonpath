@@ -1,5 +1,11 @@
 # ChangeLog
 
+## 0.2.0 (2017-03-13)
+
+* Support `path` parameter in column config. (@takumakanari)
+* Allow some strings convert to boolean.(@takumakanari)
+* Support `schema` parameter for compatibility [embulk-parser-json](https://github.com/takumakanari/embulk-parser-json).
+
 ## 0.1.3 (2017-03-07)
 
 * Make enable to skip invalid records/columns(@takumakanari)
