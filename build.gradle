@@ -90,10 +90,10 @@ task gemspec {
 Gem::Specification.new do |spec|
   spec.name          = "${project.name}"
   spec.version       = "${project.version}"
-  spec.authors       = ["Hiroyuki Sato"]
+  spec.authors       = ["Hiroyuki Sato","Takuma kanari"]
   spec.summary       = %[JSON parser with JSONPath plugin for Embulk]
   spec.description   = %[Parses JSON files with JSONPath read by other file input plugins.]
-  spec.email         = ["hiroysato@gmail.com"]
+  spec.email         = ["hiroysato@gmail.com","chemtrails.t@gmail.com"]
   spec.licenses      = ["MIT"]
   spec.homepage      = "https://github.com/hiroyuki-sato/embulk-parser-jsonpath"
 
