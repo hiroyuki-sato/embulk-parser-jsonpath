@@ -29,8 +29,8 @@ public class ColumnVisitorImpl
         implements ColumnVisitor
 {
     private static final JsonParser JSON_PARSER = new JsonParser();
-    private static final List<String> BOOL_TRUE_STRINGS = ImmutableList.of("true", "1", "yes");
-    private static final List<String> BOOL_FALSE_STRINGS = ImmutableList.of("false", "0", "no");
+    private static final List<String> BOOL_TRUE_STRINGS = ImmutableList.of("true", "1", "yes", "on", "y", "t");
+    private static final List<String> BOOL_FALSE_STRINGS = ImmutableList.of("false", "0", "no", "off", "n", "f");
 
     protected final PluginTask task;
     protected final Schema schema;

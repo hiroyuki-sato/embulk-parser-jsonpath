@@ -173,19 +173,23 @@ public class TestJsonpathParserPlugin
     {
         SchemaConfig schema = schema(column("_c1", BOOLEAN), column("_c2", BOOLEAN),
                 column("_c3", BOOLEAN), column("_c4", BOOLEAN), column("_c5", BOOLEAN),
-                column("_c6", BOOLEAN));
+                column("_c6", BOOLEAN), column("_c7", BOOLEAN), column("_c8", BOOLEAN),
+                column("_c9", BOOLEAN), column("_c10", BOOLEAN), column("_c11", BOOLEAN),
+                column("_c12", BOOLEAN));
         ConfigSource config = this.config.deepCopy().set("columns", schema);
 
         transaction(config, fileInput("[{\"_c1\" : \"yes\", \"_c2\" : \"true\", \"_c3\" : \"1\",",
-                "\"_c4\" : \"no\", \"_c5\" : \"false\", \"_c6\" : \"0\"}]"));
+                "\"_c4\" : \"on\", \"_c5\" : \"y\", \"_c6\" : \"t\",",
+                "\"_c7\" : \"no\", \"_c8\" : \"false\", \"_c9\" : \"0\"," ,
+                "\"_c10\" : \"off\", \"_c11\" : \"n\", \"_c12\" : \"f\"}]"));
         List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
         assertEquals(1, records.size());
 
         Object[] record = records.get(0);
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 5; i++) {
             assertTrue((boolean) record[i]);
         }
-        for (int i = 3; i < 5; i++) {
+        for (int i = 6; i < 11; i++) {
             assertFalse((boolean) record[i]);
         }
     }
