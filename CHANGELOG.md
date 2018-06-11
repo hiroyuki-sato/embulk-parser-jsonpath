@@ -1,8 +1,12 @@
 # ChangeLog
 
+## 0.3.1 (2018-06-11)
+
+* Drop Java 7 support.
+
 ## 0.3.0 (2018-06-11)
 
-* Upgrade Embulk version to 0.9.7
+* Upgrade Embulk version to 0.9.7 (@takumakanari)
 
 ## 0.2.0 (2017-03-13)
 
