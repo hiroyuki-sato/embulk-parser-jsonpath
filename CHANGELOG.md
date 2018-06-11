@@ -1,5 +1,9 @@
 # ChangeLog
 
+## 0.3.0 (2018-06-11)
+
+* Upgrade Embulk version to 0.9.7
+
 ## 0.2.0 (2017-03-13)
 
 * Support `path` parameter in column config. (@takumakanari)
