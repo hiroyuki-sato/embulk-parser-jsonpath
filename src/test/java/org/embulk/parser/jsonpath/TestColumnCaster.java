@@ -5,7 +5,6 @@ import org.embulk.spi.DataException;
 import org.embulk.spi.time.Timestamp;
 import org.embulk.spi.time.TimestampParser;
 import org.joda.time.DateTimeZone;
-import org.jruby.embed.ScriptingContainer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,19 +22,17 @@ public class TestColumnCaster
     public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
     public MapValue mapValue;
     public DataException thrown;
-    public ScriptingContainer jruby;
     public TimestampParser parser;
 
     @Before
     public void createResource()
     {
-        jruby = new ScriptingContainer();
         thrown = new DataException("any");
         Value[] kvs = new Value[2];
         kvs[0] = ValueFactory.newString("k");
         kvs[1] = ValueFactory.newString("v");
         mapValue = ValueFactory.newMap(kvs);
-        parser = new TimestampParser(jruby, "%Y-%m-%d %H:%M:%S.%N", DateTimeZone.UTC);
+        parser = TimestampParser.of("%Y-%m-%d %H:%M:%S.%N", DateTimeZone.UTC.toString());
     }
 
     @Test
