@@ -1,53 +1,65 @@
 plugins {
-    id "com.jfrog.bintray" version "1.1"
-    id "com.github.jruby-gradle.base" version "0.1.5"
+    id "com.jfrog.bintray" version "1.8.4"
+//    id "com.github.jruby-gradle.base" version "0.1.5"
     id "java"
     id "checkstyle"
-    id "findbugs"
+//    id "findbugs"
+    id "maven-publish"
+    id "org.embulk.embulk-plugins" version "0.3.0"
 }
-import com.github.jrubygradle.JRubyExec
+//import com.github.jrubygradle.JRubyExec
 repositories {
     mavenCentral()
     jcenter()
 }
-configurations {
-    provided
-}
+//configurations {
+//    provided
+//}
 
-version = "0.3.1"
+group = "com.github.hiroyuki_sato"
+version = "0.3.2-SNAPSHOT"
+description = "Parses JSON files with JSONPath read by other file input plugins."
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.9.7"
-    provided "org.embulk:embulk-core:0.9.7"
+//    compile  "org.embulk:embulk-core:0.9.7"
+//    provided "org.embulk:embulk-core:0.9.7"
+    compileOnly "org.embulk:embulk-core:0.9.23"
 
-    compile 'com.jayway.jsonpath:json-path:2.2.0'
+    compile('com.jayway.jsonpath:json-path:2.3.0') {
+        exclude group: "org.slf4j", module: "slf4j-api"
+    }
 
     testCompile "junit:junit:4.+"
-    testCompile  "org.embulk:embulk-core:0.9.7:tests"
-    testCompile  "org.embulk:embulk-standards:0.9.7"
+    testCompile  "org.embulk:embulk-core:0.9.23:tests"
+    testCompile  "org.embulk:embulk-standards:0.9.23"
+
+    // TODO: Remove them.
+    // These `testCompile` are a tentative workaround. It will be covered in Embulk core's testing mechanism.
+    testCompile "org.embulk:embulk-deps-buffer:0.9.23"
+    testCompile "org.embulk:embulk-deps-config:0.9.23"
 }
 
-findbugs {
-    ignoreFailures = true
-    effort = 'max'
-}
+//findbugs {
+//    ignoreFailures = true
+//    effort = 'max'
+//}
+//
+//tasks.withType(FindBugs) {
+//    reports {
+//        xml.enabled = false
+//        html.enabled = true
+//    }
+//}
 
-tasks.withType(FindBugs) {
-    reports {
-        xml.enabled = false
-        html.enabled = true
-    }
-}
-
-task classpath(type: Copy, dependsOn: ["jar"]) {
-    doFirst { file("classpath").deleteDir() }
-    from (configurations.runtime - configurations.provided + files(jar.archivePath))
-    into "classpath"
-}
-clean { delete "classpath" }
+//task classpath(type: Copy, dependsOn: ["jar"]) {
+//    doFirst { file("classpath").deleteDir() }
+//    from (configurations.runtime - configurations.provided + files(jar.archivePath))
+//    into "classpath"
+//}
+//clean { delete "classpath" }
 
 checkstyle {
     configFile = file("${project.rootDir}/config/checkstyle/checkstyle.xml")
@@ -66,50 +78,102 @@ task checkstyle(type: Checkstyle) {
     source = sourceSets.main.allJava + sourceSets.test.allJava
 }
 
-task gem(type: JRubyExec, dependsOn: ["gemspec", "classpath"]) {
-    jrubyArgs "-rrubygems/gem_runner", "-eGem::GemRunner.new.run(ARGV)", "build"
-    script "${project.name}.gemspec"
-    doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "pkg") }
+//task gem(type: JRubyExec, dependsOn: ["gemspec", "classpath"]) {
+//    jrubyArgs "-rrubygems/gem_runner", "-eGem::GemRunner.new.run(ARGV)", "build"
+//    script "${project.name}.gemspec"
+//    doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "pkg") }
+//}
+
+//task gemPush(type: JRubyExec, dependsOn: ["gem"]) {
+//    jrubyArgs "-rrubygems/gem_runner", "-eGem::GemRunner.new.run(ARGV)", "push"
+//    script "pkg/${project.name}-${project.version}.gem"
+//}
+
+//task "package"(dependsOn: ["gemspec", "classpath"]) {
+//    doLast {
+//        println "> Build succeeded."
+//        println "> You can run embulk with '-L ${file(".").absolutePath}' argument."
+//    }
+//}
+
+//task gemspec {
+//    ext.gemspecFile = file("${project.name}.gemspec")
+//    inputs.file "build.gradle"
+//    outputs.file gemspecFile
+//    doLast { gemspecFile.write($/
+//Gem::Specification.new do |spec|
+//  spec.name          = "${project.name}"
+//  spec.version       = "${project.version}"
+//  spec.authors       = ["Hiroyuki Sato","Takuma kanari"]
+//  spec.summary       = %[JSON parser with JSONPath plugin for Embulk]
+//  spec.description   = %[Parses JSON files with JSONPath read by other file input plugins.]
+//  spec.email         = ["hiroysato@gmail.com","chemtrails.t@gmail.com"]
+//  spec.licenses      = ["MIT"]
+//  spec.homepage      = "https://github.com/hiroyuki-sato/embulk-parser-jsonpath"
+//
+//  spec.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
+//  spec.test_files    = spec.files.grep(%r"^(test|spec)/")
+//  spec.require_paths = ["lib"]
+//
+//  #spec.add_dependency 'YOUR_GEM_DEPENDENCY', ['~> YOUR_GEM_DEPENDENCY_VERSION']
+//  spec.add_development_dependency 'bundler', ['~> 1.0']
+//  spec.add_development_dependency 'rake', ['>= 10.0']
+//  spec.add_dependency 'jsonpath', ['~> 0.5.8'] # for guess
+//  spec.add_dependency 'json', ['~> 2.0.2']     # for guess
+//end
+///$)
+//    }
+//}
+//clean { delete "${project.name}.gemspec" }
+
+embulkPlugin {
+    mainClass = "org.embulk.parser.jsonpath.JsonpathParserPlugin"
+    category = "parser"
+    type = "jsonpath"
 }
 
-task gemPush(type: JRubyExec, dependsOn: ["gem"]) {
-    jrubyArgs "-rrubygems/gem_runner", "-eGem::GemRunner.new.run(ARGV)", "push"
-    script "pkg/${project.name}-${project.version}.gem"
-}
-
-task "package"(dependsOn: ["gemspec", "classpath"]) {
-    doLast {
-        println "> Build succeeded."
-        println "> You can run embulk with '-L ${file(".").absolutePath}' argument."
+publishing {
+    publications {
+        embulkPluginMaven(MavenPublication) {  // Publish it with "publishEmbulkPluginMavenPublicationToMavenRepository".
+            from components.java  // Must be "components.java". The dependency modification works only for it.
+        }
+    }
+    repositories {
+        maven {
+            url = "${project.buildDir}/mavenPublishLocal"
+        }
     }
 }
 
-task gemspec {
-    ext.gemspecFile = file("${project.name}.gemspec")
-    inputs.file "build.gradle"
-    outputs.file gemspecFile
-    doLast { gemspecFile.write($/
-Gem::Specification.new do |spec|
-  spec.name          = "${project.name}"
-  spec.version       = "${project.version}"
-  spec.authors       = ["Hiroyuki Sato","Takuma kanari"]
-  spec.summary       = %[JSON parser with JSONPath plugin for Embulk]
-  spec.description   = %[Parses JSON files with JSONPath read by other file input plugins.]
-  spec.email         = ["hiroysato@gmail.com","chemtrails.t@gmail.com"]
-  spec.licenses      = ["MIT"]
-  spec.homepage      = "https://github.com/hiroyuki-sato/embulk-parser-jsonpath"
+gem {
+//    from("LICENSE.txt")  // Optional -- if you need other files in the gem.
+    authors = [ "Hiroyuki Sato","Takuma kanari" ]
+    email = [ "hiroysato@gmail.com","chemtrails.t@gmail.com"]
+    // "description" of the gem is copied from "description" of your Gradle project.
+    summary = "JSON parser with JSONPath plugin for Embulk"
+    homepage = "https://github.com/hiroyuki-sato/embulk-parser-jsonpath"
+    licenses = [ "MIT" ]
+//    metadata = [  // Optional -- if you need metadata in the gem.
+//        "foo": "bar"
+//    ]
 
-  spec.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
-  spec.test_files    = spec.files.grep(%r"^(test|spec)/")
-  spec.require_paths = ["lib"]
-
-  #spec.add_dependency 'YOUR_GEM_DEPENDENCY', ['~> YOUR_GEM_DEPENDENCY_VERSION']
-  spec.add_development_dependency 'bundler', ['~> 1.0']
-  spec.add_development_dependency 'rake', ['>= 10.0']
-  spec.add_dependency 'jsonpath', ['~> 0.5.8'] # for guess
-  spec.add_dependency 'json', ['~> 2.0.2']     # for guess
-end
-/$)
+    generateRubyCode = false  // Avoiding generate lib/embulk/parser/jsonpath.rb
+    into("lib/embulk/parser/") {
+      from "lib/embulk/parser/jsonpath.rb"
     }
+    into("lib/embulk/guess/") {
+      from "lib/embulk/guess/jsonpath.rb"
+    }
+    dependencies = [
+      "'jsonpath', ['~> 0.5']",
+      "'json', ['~> 2.0']"
+    ]
 }
-clean { delete "${project.name}.gemspec" }
+
+gemPush {
+    host = "https://rubygems.org"
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:deprecation" << "-Xlint:unchecked"
+}
