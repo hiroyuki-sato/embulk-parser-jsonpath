@@ -5,7 +5,7 @@ plugins {
     id "checkstyle"
 //    id "findbugs"
     id "maven-publish"
-    id "org.embulk.embulk-plugins" version "0.3.0"
+    id "org.embulk.embulk-plugins" version "0.4.0"
 }
 //import com.github.jrubygradle.JRubyExec
 repositories {
