@@ -180,7 +180,7 @@ public class TestJsonpathParserPlugin
 
         transaction(config, fileInput("[{\"_c1\" : \"yes\", \"_c2\" : \"true\", \"_c3\" : \"1\",",
                 "\"_c4\" : \"on\", \"_c5\" : \"y\", \"_c6\" : \"t\",",
-                "\"_c7\" : \"no\", \"_c8\" : \"false\", \"_c9\" : \"0\"," ,
+                "\"_c7\" : \"no\", \"_c8\" : \"false\", \"_c9\" : \"0\",",
                 "\"_c10\" : \"off\", \"_c11\" : \"n\", \"_c12\" : \"f\"}]"));
         List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
         assertEquals(1, records.size());
