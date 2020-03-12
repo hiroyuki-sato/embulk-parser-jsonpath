@@ -30,6 +30,7 @@ import org.embulk.spi.time.TimestampParser;
 import org.embulk.spi.util.FileInputInputStream;
 import org.embulk.spi.util.Timestamps;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Locale;
 import java.util.Map;
@@ -41,7 +42,7 @@ public class JsonpathParserPlugin
         implements ParserPlugin
 {
 
-    private static final Logger logger = Exec.getLogger(JsonpathParserPlugin.class);
+    private static final Logger logger = LoggerFactory.getLogger(JsonpathParserPlugin.class);
 
     private static final Configuration JSON_PATH_CONFIG = Configuration
             .builder()
