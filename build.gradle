@@ -3,7 +3,7 @@ plugins {
     id "com.github.jruby-gradle.base" version "0.1.5"
     id "java"
     id "checkstyle"
-    id "findbugs"
+//    id "findbugs"
 }
 import com.github.jrubygradle.JRubyExec
 repositories {
@@ -35,17 +35,17 @@ dependencies {
     testCompile "org.embulk:embulk-deps-config:0.9.23"
 }
 
-findbugs {
-    ignoreFailures = true
-    effort = 'max'
-}
+//findbugs {
+//    ignoreFailures = true
+//    effort = 'max'
+//}
 
-tasks.withType(FindBugs) {
-    reports {
-        xml.enabled = false
-        html.enabled = true
-    }
-}
+//tasks.withType(FindBugs) {
+//    reports {
+//        xml.enabled = false
+//        html.enabled = true
+//    }
+//}
 
 task classpath(type: Copy, dependsOn: ["jar"]) {
     doFirst { file("classpath").deleteDir() }
