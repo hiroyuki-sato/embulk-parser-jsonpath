@@ -20,14 +20,19 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.9.7"
-    provided "org.embulk:embulk-core:0.9.7"
+    compile  "org.embulk:embulk-core:0.9.23"
+    provided "org.embulk:embulk-core:0.9.23"
 
     compile 'com.jayway.jsonpath:json-path:2.2.0'
 
     testCompile "junit:junit:4.+"
-    testCompile  "org.embulk:embulk-core:0.9.7:tests"
-    testCompile  "org.embulk:embulk-standards:0.9.7"
+    testCompile  "org.embulk:embulk-core:0.9.23:tests"
+    testCompile  "org.embulk:embulk-standards:0.9.23"
+
+    // TODO: Remove them.
+    // These `testCompile` are a tentative workaround. It will be covered in Embulk core's testing mechanism.
+    testCompile "org.embulk:embulk-deps-buffer:0.9.23"
+    testCompile "org.embulk:embulk-deps-config:0.9.23"
 }
 
 findbugs {
