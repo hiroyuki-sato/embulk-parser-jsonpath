@@ -249,7 +249,7 @@ public class TestJsonpathParserPlugin
             assertTrue(t instanceof DataException);
         }
     }
-
+/*
     @Test
     public void writeNils()
             throws Exception
@@ -277,7 +277,7 @@ public class TestJsonpathParserPlugin
             }
         }
     }
-
+*/
     @Test
     public void useNormal()
             throws Exception
