@@ -98,3 +98,11 @@ gemPush {
 tasks.withType(JavaCompile) {
     options.compilerArgs << "-Xlint:deprecation" << "-Xlint:unchecked"
 }
+
+
+// For avoiding the following exception
+// Caused by:
+// java.lang.OutOfMemoryError: Java heap space
+test {
+  maxHeapSize = "2g"
+}

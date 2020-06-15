@@ -10,6 +10,7 @@ jobs:
       with:
         java-version: 1.8
     - name: Build with testing
-      run: ./gradlew --stacktrace test
+      run: ./gradlew check
+#      run: ./gradlew --stacktrace --info test
 #    - name: Build with testing
 #      run: ./gradlew jacocoTestReport coveralls
