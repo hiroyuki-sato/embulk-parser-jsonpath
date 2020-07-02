@@ -11,7 +11,7 @@ repositories {
 }
 
 group = "com.github.hiroyuki_sato"
-version = "0.3.2-SNAPSHOT"
+version = "0.3.2"
 description = "Parses JSON files with JSONPath read by other file input plugins."
 
 sourceCompatibility = 1.8
