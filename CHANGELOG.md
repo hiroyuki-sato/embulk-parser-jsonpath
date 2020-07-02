@@ -1,5 +1,11 @@
 # ChangeLog
 
+## 0.3.2 (20120-07-02)
+
+* Use [gradle-embulk-plugins](https://github.com/embulk/gradle-embulk-plugins)
+* Add GitHub Actions CI
+* Update JsonPath 2.4.0
+
 ## 0.3.1 (2018-06-11)
 
 * Drop Java 7 support.
