@@ -172,37 +172,19 @@ public class JsonpathParserPlugin
                     continue;
                 }
 
-                if (!json.isArray()) {
-                    skipOrThrow(new JsonRecordValidateException(format(Locale.ENGLISH,
-                            "Json string is not representing array value json='%s'", json)), stopOnInvalidRecord);
-                    continue;
-                }
-
-                for (JsonNode recordValue : json) {
+                if (json.isArray()) {
+                    for (JsonNode recordValue : json) {
+                        try {
+                            createRecordFromJson(recordValue, schema, jsonPathMap, visitor, pageBuilder);
+                        }
+                        catch (DataException e) {
+                            skipOrThrow(e, stopOnInvalidRecord);
+                            continue;
+                        }
+                    }
+                } else {
                     try {
-                        if (recordValue.getNodeType() != JsonNodeType.OBJECT) {
-                            throw new JsonRecordValidateException(format(Locale.ENGLISH,
-                                    "Json string is not representing map value json='%s'", recordValue));
-                        }
-
-                        for (Column column : schema.getColumns()) {
-                            JsonNode value = null;
-                            if (jsonPathMap.containsKey(column)) {
-                                try {
-                                    value = JsonPath.using(JSON_PATH_CONFIG).parse(recordValue).read(jsonPathMap.get(column));
-                                }
-                                catch (PathNotFoundException e) {
-                                    // pass (value is nullable)
-                                }
-                            }
-                            else {
-                                value = recordValue.get(column.getName());
-                            }
-                            visitor.setValue(value);
-                            column.visit(visitor);
-                        }
-
-                        pageBuilder.addRecord();
+                        createRecordFromJson(json, schema, jsonPathMap, visitor, pageBuilder);
                     }
                     catch (DataException e) {
                         skipOrThrow(e, stopOnInvalidRecord);
@@ -226,6 +208,33 @@ public class JsonpathParserPlugin
             }
         }
         return Collections.unmodifiableMap(columnMap);
+    }
+
+    private void createRecordFromJson(JsonNode json, Schema schema, Map<Column, String> jsonPathMap, ColumnVisitorImpl visitor, PageBuilder pageBuilder)
+    {
+        if (json.getNodeType() != JsonNodeType.OBJECT) {
+            throw new JsonRecordValidateException(format(Locale.ENGLISH,
+                    "Json string is not representing map value json='%s'", json));
+        }
+
+        for (Column column : schema.getColumns()) {
+            JsonNode value = null;
+            if (jsonPathMap.containsKey(column)) {
+                try {
+                    value = JsonPath.using(JSON_PATH_CONFIG).parse(json).read(jsonPathMap.get(column));
+                }
+                catch (PathNotFoundException e) {
+                    // pass (value is nullable)
+                }
+            }
+            else {
+                value = json.get(column.getName());
+            }
+            visitor.setValue(value);
+            column.visit(visitor);
+        }
+
+        pageBuilder.addRecord();
     }
 
     private void skipOrThrow(DataException cause, boolean stopOnInvalidRecord)
