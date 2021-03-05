@@ -35,6 +35,18 @@ dependencies {
         exclude group: "org.slf4j", module: "slf4j-api"
     }
 
+    // They are once excluded from transitive dependencies of other dependencies,
+    // and added explicitly with versions exactly the same with embulk-core:0.10.19.
+    compile "com.fasterxml.jackson.core:jackson-annotations:2.6.7"
+    compile "com.fasterxml.jackson.core:jackson-core:2.6.7"
+    compile "com.fasterxml.jackson.core:jackson-databind:2.6.7"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.6.7"
+    compile "javax.validation:validation-api:1.1.0.Final"
+    //compile "joda-time:joda-time:2.9.2"
+
+    compile "org.embulk:embulk-util-file:0.1.1"
+    compile "org.embulk:embulk-util-timestamp:0.2.1"
+
     testCompile "junit:junit:4.+"
     testCompile  "org.embulk:embulk-core:0.10.26:tests"
     testCompile  "org.embulk:embulk-standards:0.10.26"
