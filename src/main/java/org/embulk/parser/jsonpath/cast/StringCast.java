@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import org.embulk.spi.DataException;
 import org.embulk.spi.time.Timestamp;
 import org.embulk.spi.time.TimestampParseException;
-import org.embulk.spi.time.TimestampParser;
+import org.embulk.util.timestamp.TimestampFormatter;
 
 public class StringCast
 {

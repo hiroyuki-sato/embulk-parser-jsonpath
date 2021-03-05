@@ -7,7 +7,7 @@ import org.embulk.parser.jsonpath.cast.LongCast;
 import org.embulk.parser.jsonpath.cast.StringCast;
 import org.embulk.spi.DataException;
 import org.embulk.spi.time.Timestamp;
-import org.embulk.spi.time.TimestampParser;
+import org.embulk.util.timestamp.TimestampFormatter;
 import org.msgpack.value.Value;
 
 class ColumnCaster

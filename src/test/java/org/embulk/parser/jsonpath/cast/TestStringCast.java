@@ -3,7 +3,7 @@ package org.embulk.parser.jsonpath.cast;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.spi.DataException;
 import org.embulk.spi.time.Timestamp;
-import org.embulk.spi.time.TimestampParser;
+import org.embulk.util.timestamp.TimestampFormatter;
 import org.joda.time.DateTimeZone;
 import org.junit.Rule;
 import org.junit.Test;
