@@ -14,9 +14,12 @@ import org.embulk.util.config.Config;
 import org.embulk.util.config.ConfigDefault;
 import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
 import org.embulk.util.config.Task;
 import org.embulk.config.TaskSource;
 import org.embulk.spi.Column;
+import org.embulk.util.config.TaskMapper;
 import org.embulk.util.config.units.ColumnConfig;
 import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
@@ -43,6 +46,7 @@ public class JsonpathParserPlugin
 {
 
     private static final Logger logger = LoggerFactory.getLogger(JsonpathParserPlugin.class);
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory.builder().addDefaultModules().build();
 
     private static final Configuration JSON_PATH_CONFIG = Configuration
             .builder()
@@ -94,18 +98,22 @@ public class JsonpathParserPlugin
     @Override
     public void transaction(ConfigSource config, ParserPlugin.Control control)
     {
-        PluginTask task = config.loadConfig(PluginTask.class);
+        final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
+        final PluginTask task = configMapper.map(config, PluginTask.class);
 
         Schema schema = getSchemaConfig(task).toSchema();
 
-        control.run(task.dump(), schema);
+        control.run(task.toTaskSource(), schema);
     }
 
+    @SuppressWarnings("deprecated")
     @Override
     public void run(TaskSource taskSource, Schema schema,
             FileInput input, PageOutput output)
     {
-        PluginTask task = taskSource.loadTask(PluginTask.class);
+        final TaskMapper taskMapper = CONFIG_MAPPER_FACTORY.createTaskMapper();
+        final PluginTask task = taskMapper.map(taskSource, PluginTask.class);
+
         String jsonRoot = task.getRoot();
 
         logger.info("JSONPath = " + jsonRoot);
@@ -113,6 +121,7 @@ public class JsonpathParserPlugin
         final Map<Column, String> jsonPathMap = createJsonPathMap(task, schema);
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
 
+        // TODO: Use Exec.getPageBuilder after dropping v0.9
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
             ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
 
