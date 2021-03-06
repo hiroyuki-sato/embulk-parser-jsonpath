@@ -2,8 +2,10 @@ package org.embulk.parser.jsonpath;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
+
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Optional;
-import com.google.common.collect.ImmutableMap;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.InvalidJsonException;
 import com.jayway.jsonpath.JsonPath;
@@ -186,15 +188,15 @@ public class JsonpathParserPlugin
 
     private Map<Column, String> createJsonPathMap(PluginTask task, Schema schema)
     {
-        ImmutableMap.Builder<Column, String> builder = ImmutableMap.builder();
+        Map<Column, String> columnMap = new HashMap();
         for (int i = 0; i < schema.size(); i++) {
             ColumnConfig config = getSchemaConfig(task).getColumn(i);
             JsonpathColumnOption option = config.getOption().loadConfig(JsonpathColumnOption.class);
             if (option.getPath().isPresent()) {
-                builder.put(schema.getColumn(i), option.getPath().get());
+                columnMap.put(schema.getColumn(i), option.getPath().get());
             }
         }
-        return builder.build();
+        return Collections.unmodifiableMap(columnMap);
     }
 
     private void skipOrThrow(DataException cause, boolean stopOnInvalidRecord)
