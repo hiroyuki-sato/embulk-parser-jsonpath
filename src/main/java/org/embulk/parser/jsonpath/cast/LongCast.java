@@ -3,6 +3,8 @@ package org.embulk.parser.jsonpath.cast;
 import org.embulk.spi.DataException;
 import org.embulk.spi.time.Timestamp;
 
+import java.time.Instant;
+
 public class LongCast
 {
     private LongCast() {}
@@ -40,8 +42,8 @@ public class LongCast
         return String.valueOf(value);
     }
 
-    public static Timestamp asTimestamp(long value) throws DataException
+    public static Instant asTimestamp(long value) throws DataException
     {
-        return Timestamp.ofEpochSecond(value);
+        return Instant.ofEpochSecond(value);
     }
 }

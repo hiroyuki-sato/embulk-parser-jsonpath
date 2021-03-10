@@ -6,6 +6,9 @@ import org.embulk.spi.time.Timestamp;
 import org.embulk.spi.time.TimestampParseException;
 import org.embulk.util.timestamp.TimestampFormatter;
 
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+
 public class StringCast
 {
     // copy from csv plugin
@@ -70,12 +73,12 @@ public class StringCast
         return value;
     }
 
-    public static Timestamp asTimestamp(String value, TimestampParser parser) throws DataException
+    public static Instant asTimestamp(String value, TimestampFormatter parser) throws DataException
     {
         try {
             return parser.parse(value);
         }
-        catch (TimestampParseException ex) {
+        catch (DateTimeParseException ex) {
             throw new DataException(buildErrorMessage("timestamp", value), ex);
         }
     }

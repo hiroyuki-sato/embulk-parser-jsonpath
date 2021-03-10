@@ -1,6 +1,8 @@
 package org.embulk.parser.jsonpath;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
+import java.time.Instant;
 import java.util.Optional;
 import com.google.common.collect.ImmutableList;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.PluginTask;
@@ -35,12 +37,12 @@ public class ColumnVisitorImpl
     protected final PluginTask task;
     protected final Schema schema;
     protected final PageBuilder pageBuilder;
-    protected final TimestampParser[] timestampParsers;
+    protected final TimestampFormatter[] timestampParsers;
     protected final Boolean[] autoTypecasts;
 
     protected JsonNode value;
 
-    public ColumnVisitorImpl(PluginTask task, Schema schema, PageBuilder pageBuilder, TimestampParser[] timestampParsers)
+    public ColumnVisitorImpl(PluginTask task, Schema schema, PageBuilder pageBuilder, TimestampFormatter[] timestampParsers)
     {
         this.task = task;
         this.schema = schema;
@@ -168,7 +170,7 @@ public class ColumnVisitorImpl
         }
         else {
             try {
-                Timestamp timestamp = ColumnCaster.asTimestamp(newString(value.asText()), timestampParsers[column.getIndex()]);
+                Instant timestamp = ColumnCaster.asTimestamp(newString(value.asText()), timestampParsers[column.getIndex()]);
                 pageBuilder.setTimestamp(column, timestamp);
             }
             catch (MessageTypeException e) {

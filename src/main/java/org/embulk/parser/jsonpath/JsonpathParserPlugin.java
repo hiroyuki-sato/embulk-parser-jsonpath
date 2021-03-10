@@ -3,6 +3,7 @@ package org.embulk.parser.jsonpath;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
@@ -12,6 +13,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+import org.embulk.spi.type.TimestampType;
 import org.embulk.util.config.Config;
 import org.embulk.util.config.ConfigDefault;
 import org.embulk.config.ConfigException;
@@ -33,7 +35,6 @@ import org.embulk.spi.Schema;
 import org.embulk.util.config.units.SchemaConfig;
 import org.embulk.util.timestamp.TimestampFormatter;
 import org.embulk.util.file.FileInputInputStream;
-import org.embulk.spi.util.Timestamps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +66,7 @@ public class JsonpathParserPlugin
     }
 
     public interface PluginTask
-            extends Task, TimestampParser.Task
+            extends Task
     {
         @Config("root")
         @ConfigDefault("\"$\"")
@@ -87,6 +88,21 @@ public class JsonpathParserPlugin
         @Config("stop_on_invalid_record")
         @ConfigDefault("false")
         boolean getStopOnInvalidRecord();
+
+        // From org.embulk.spi.time.TimestampParser.Task.
+        @Config("default_timezone")
+        @ConfigDefault("\"UTC\"")
+        String getDefaultTimeZoneId();
+
+        // From org.embulk.spi.time.TimestampParser.Task.
+        @Config("default_timestamp_format")
+        @ConfigDefault("\"%Y-%m-%d %H:%M:%S.%N %z\"")
+        String getDefaultTimestampFormat();
+
+        // From org.embulk.spi.time.TimestampParser.Task.
+        @Config("default_date")
+        @ConfigDefault("\"1970-01-01\"")
+        String getDefaultDate();
     }
 
     public interface JsonpathColumnOption
@@ -95,6 +111,18 @@ public class JsonpathParserPlugin
         @Config("path")
         @ConfigDefault("null")
         Optional<String> getPath();
+
+        @Config("timezone")
+        @ConfigDefault("null")
+        Optional<String> getTimeZoneId();
+
+        @Config("format")
+        @ConfigDefault("null")
+        Optional<String> getFormat();
+
+        @Config("date")
+        @ConfigDefault("null")
+        Optional<String> getDate();
     }
 
     @Override
@@ -119,7 +147,7 @@ public class JsonpathParserPlugin
         String jsonRoot = task.getRoot();
 
         logger.info("JSONPath = " + jsonRoot);
-        final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, getSchemaConfig(task));
+        final TimestampFormatter[] timestampParsers = newTimestampColumnFormatters(task, getSchemaConfig(task));
         final Map<Column, String> jsonPathMap = createJsonPathMap(task, schema);
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
 
@@ -221,4 +249,40 @@ public class JsonpathParserPlugin
             throw new ConfigException("Attribute 'columns' is required but not set");
         }
     }
+    @SuppressWarnings("deprecation")  // https://github.com/embulk/embulk/issues/1289
+    private static TimestampFormatter[] newTimestampColumnFormatters(
+            final PluginTask task,
+            final SchemaConfig schema) {
+        final TimestampFormatter[] formatters = new TimestampFormatter[schema.getColumnCount()];
+        int i = 0;
+        for (final ColumnConfig column : schema.getColumns()) {
+            if (column.getType() instanceof TimestampType) {
+                final JsonpathColumnOption columnOption =
+                        CONFIG_MAPPER_FACTORY.createConfigMapper().map(column.getOption(), JsonpathColumnOption.class);
+
+                final String pattern = columnOption.getFormat().orElse(task.getDefaultTimestampFormat());
+                formatters[i] = TimestampFormatter.builder(pattern, true)
+                        .setDefaultZoneFromString(columnOption.getTimeZoneId().orElse(task.getDefaultTimeZoneId()))
+                        .setDefaultDateFromString(columnOption.getDate().orElse(task.getDefaultDate()))
+                        .build();
+            }
+            i++;
+        }
+        return formatters;
+    }
+
+    @SuppressWarnings("deprecation")  // For the use of new PageBuilder with java.time.Instant.
+    private static void setTimestamp(final PageBuilder pageBuilder, final Column column, final Instant instant) {
+        try {
+            pageBuilder.setTimestamp(column, instant);
+        } catch (final NoSuchMethodError ex) {
+            // PageBuilder with Instant is available from v0.10.13, and org.embulk.spi.Timestamp is deprecated.
+            // It is not expected to happen because this plugin is embedded with Embulk v0.10.24+, but falling back just in case.
+            // TODO: Remove this fallback in v0.11.
+            logger.warn("embulk-parser-jsonpath is expected to work with Embulk v0.10.17+.", ex);
+            pageBuilder.setTimestamp(column, org.embulk.spi.time.Timestamp.ofInstant(instant));
+        }
+    }
+
+
 }

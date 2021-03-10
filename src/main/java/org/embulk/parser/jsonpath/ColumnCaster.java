@@ -10,6 +10,8 @@ import org.embulk.spi.time.Timestamp;
 import org.embulk.util.timestamp.TimestampFormatter;
 import org.msgpack.value.Value;
 
+import java.time.Instant;
+
 class ColumnCaster
 {
     private ColumnCaster() {}
@@ -76,7 +78,7 @@ class ColumnCaster
         return value.toString();
     }
 
-    public static Timestamp asTimestamp(Value value, TimestampParser parser) throws DataException
+    public static Instant asTimestamp(Value value, TimestampFormatter parser) throws DataException
     {
         if (value.isBooleanValue()) {
             return BooleanCast.asTimestamp(value.asBooleanValue().getBoolean());

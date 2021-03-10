@@ -3,6 +3,8 @@ package org.embulk.parser.jsonpath.cast;
 import org.embulk.spi.DataException;
 import org.embulk.spi.time.Timestamp;
 
+import java.time.Instant;
+
 public class DoubleCast
 {
     private DoubleCast() {}
@@ -32,10 +34,10 @@ public class DoubleCast
         return String.valueOf(value);
     }
 
-    public static Timestamp asTimestamp(double value) throws DataException
+    public static Instant asTimestamp(double value) throws DataException
     {
         long epochSecond = (long) value;
         long nanoAdjustMent = (long) ((value - epochSecond) * 1000000000);
-        return Timestamp.ofEpochSecond(epochSecond, nanoAdjustMent);
+        return Instant.ofEpochSecond(epochSecond, nanoAdjustMent);
     }
 }
