@@ -3,8 +3,9 @@ package org.embulk.parser.jsonpath;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Optional;
-import com.google.common.collect.ImmutableList;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.PluginTask;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.TypecastColumnOption;
 import org.embulk.spi.Column;
@@ -31,8 +32,8 @@ public class ColumnVisitorImpl
         implements ColumnVisitor
 {
     private static final JsonParser JSON_PARSER = new JsonParser();
-    private static final List<String> BOOL_TRUE_STRINGS = ImmutableList.of("true", "1", "yes", "on", "y", "t");
-    private static final List<String> BOOL_FALSE_STRINGS = ImmutableList.of("false", "0", "no", "off", "n", "f");
+    private static final List<String> BOOL_TRUE_STRINGS = Collections.unmodifiableList(Arrays.asList("true", "1", "yes", "on", "y", "t"));
+    private static final List<String> BOOL_FALSE_STRINGS = Collections.unmodifiableList(Arrays.asList("false", "0", "no", "off", "n", "f"));
 
     protected final PluginTask task;
     protected final Schema schema;
