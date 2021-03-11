@@ -14,9 +14,8 @@ import org.embulk.spi.ColumnVisitor;
 import org.embulk.spi.PageBuilder;
 import org.embulk.spi.Schema;
 import org.embulk.util.config.units.SchemaConfig;
-import org.embulk.spi.json.JsonParseException;
-import org.embulk.spi.json.JsonParser;
-import org.embulk.spi.time.Timestamp;
+import org.embulk.util.json.JsonParseException;
+import org.embulk.util.json.JsonParser;
 import org.embulk.util.timestamp.TimestampFormatter;
 import org.msgpack.core.MessageTypeException;
 
@@ -65,7 +64,7 @@ public class ColumnVisitorImpl
         if (schemaConfig.isPresent()) {
             for (ColumnConfig columnConfig : schemaConfig.get().getColumns()) {
                 TypecastColumnOption columnOption = columnConfig.getOption().loadConfig(TypecastColumnOption.class);
-                Boolean autoTypecast = columnOption.getTypecast().or(task.getDefaultTypecast());
+                Boolean autoTypecast = columnOption.getTypecast().orElse(task.getDefaultTypecast());
                 Column column = schema.lookupColumn(columnConfig.getName());
                 this.autoTypecasts[column.getIndex()] = autoTypecast;
             }

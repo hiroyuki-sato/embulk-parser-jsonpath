@@ -1,8 +1,6 @@
 package org.embulk.parser.jsonpath.cast;
 
 import org.embulk.spi.DataException;
-import org.embulk.spi.time.Timestamp;
-import org.embulk.spi.time.TimestampParseException;
 import org.embulk.util.timestamp.TimestampFormatter;
 
 import java.time.Instant;
