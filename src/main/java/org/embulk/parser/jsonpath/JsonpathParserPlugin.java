@@ -3,7 +3,6 @@ package org.embulk.parser.jsonpath;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 
-import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
@@ -130,7 +129,6 @@ public class JsonpathParserPlugin
     {
         final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
         final PluginTask task = configMapper.map(config, PluginTask.class);
-
         Schema schema = getSchemaConfig(task).toSchema();
 
         control.run(task.toTaskSource(), schema);
@@ -270,19 +268,4 @@ public class JsonpathParserPlugin
         }
         return formatters;
     }
-
-    @SuppressWarnings("deprecation")  // For the use of new PageBuilder with java.time.Instant.
-    private static void setTimestamp(final PageBuilder pageBuilder, final Column column, final Instant instant) {
-        try {
-            pageBuilder.setTimestamp(column, instant);
-        } catch (final NoSuchMethodError ex) {
-            // PageBuilder with Instant is available from v0.10.13, and org.embulk.spi.Timestamp is deprecated.
-            // It is not expected to happen because this plugin is embedded with Embulk v0.10.24+, but falling back just in case.
-            // TODO: Remove this fallback in v0.11.
-            logger.warn("embulk-parser-jsonpath is expected to work with Embulk v0.10.17+.", ex);
-            pageBuilder.setTimestamp(column, org.embulk.spi.time.Timestamp.ofInstant(instant));
-        }
-    }
-
-
 }
