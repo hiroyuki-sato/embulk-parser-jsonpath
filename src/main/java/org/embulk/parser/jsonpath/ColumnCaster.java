@@ -6,7 +6,6 @@ import org.embulk.parser.jsonpath.cast.JsonCast;
 import org.embulk.parser.jsonpath.cast.LongCast;
 import org.embulk.parser.jsonpath.cast.StringCast;
 import org.embulk.spi.DataException;
-import org.embulk.spi.time.Timestamp;
 import org.embulk.util.timestamp.TimestampFormatter;
 import org.msgpack.value.Value;
 

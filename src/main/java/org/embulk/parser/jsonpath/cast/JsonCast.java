@@ -1,7 +1,6 @@
 package org.embulk.parser.jsonpath.cast;
 
 import org.embulk.spi.DataException;
-import org.embulk.spi.time.Timestamp;
 import org.msgpack.value.Value;
 
 import java.time.Instant;
