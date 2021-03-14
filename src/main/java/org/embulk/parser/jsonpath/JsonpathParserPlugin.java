@@ -23,6 +23,7 @@ import org.embulk.util.config.Task;
 import org.embulk.config.TaskSource;
 import org.embulk.spi.Column;
 import org.embulk.util.config.TaskMapper;
+import org.embulk.util.config.modules.TypeModule;
 import org.embulk.util.config.units.ColumnConfig;
 import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
@@ -48,7 +49,11 @@ public class JsonpathParserPlugin
 {
 
     private static final Logger logger = LoggerFactory.getLogger(JsonpathParserPlugin.class);
-    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory.builder().addDefaultModules().build();
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory
+            .builder()
+            .addDefaultModules()
+            .addModule(new TypeModule())
+            .build();
 
     private static final Configuration JSON_PATH_CONFIG = Configuration
             .builder()
