@@ -56,8 +56,7 @@ dependencies {
 
     // TODO: Remove them.
     // These `testCompile` are a tentative workaround. It will be covered in Embulk core's testing mechanism.
-    testCompile "org.embulk:embulk-deps-buffer:0.10.9"
-    testCompile "org.embulk:embulk-deps-config:0.10.9"
+    testCompile "org.embulk:embulk-deps:0.10.26"
 }
 
 checkstyle {
