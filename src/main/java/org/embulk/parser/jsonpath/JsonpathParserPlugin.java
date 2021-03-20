@@ -219,7 +219,7 @@ public class JsonpathParserPlugin
 
     private Map<Column, String> createJsonPathMap(PluginTask task, Schema schema)
     {
-        Map<Column, String> columnMap = new HashMap();
+        Map<Column, String> columnMap = new HashMap<>();
         for (int i = 0; i < schema.size(); i++) {
             ColumnConfig config = getSchemaConfig(task).getColumn(i);
             JsonpathColumnOption option = CONFIG_MAPPER_FACTORY.createConfigMapper().map(config.getOption(),JsonpathColumnOption.class);
