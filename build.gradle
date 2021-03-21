@@ -51,6 +51,7 @@ dependencies {
     compile "org.embulk:embulk-util-timestamp:0.2.1"
 
     testCompile "junit:junit:4.+"
+    testCompile "org.embulk:embulk-core:0.10.26"
     testCompile  "org.embulk:embulk-core:0.10.26:tests"
     testCompile  "org.embulk:embulk-standards:0.10.26"
 
