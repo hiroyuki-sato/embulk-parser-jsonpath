@@ -3,6 +3,8 @@ package org.embulk.parser.jsonpath.cast;
 import org.embulk.spi.time.Timestamp;
 import org.junit.Test;
 
+import java.time.Instant;
+
 import static org.junit.Assert.assertEquals;
 
 public class TestLongCast
@@ -35,7 +37,9 @@ public class TestLongCast
     @Test
     public void asTimestamp()
     {
+        Instant instant;
         Timestamp expected = Timestamp.ofEpochSecond(1);
-        assertEquals(expected, LongCast.asTimestamp(1));
+        instant = LongCast.asTimestamp(1);
+        assertEquals(expected, Timestamp.ofInstant(instant));
     }
 }

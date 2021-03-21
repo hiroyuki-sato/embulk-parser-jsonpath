@@ -36,7 +36,7 @@ public class DoubleCast
     public static Instant asTimestamp(double value) throws DataException
     {
         long epochSecond = (long) value;
-        long nanoAdjustMent = (long) ((value - epochSecond) * 1000000000);
-        return Instant.ofEpochSecond(epochSecond, nanoAdjustMent);
+        long nanoAdjustment = (long) ((value - epochSecond) * 1000000000);
+        return Instant.ofEpochSecond(epochSecond, nanoAdjustment);
     }
 }

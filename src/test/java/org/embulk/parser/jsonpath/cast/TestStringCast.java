@@ -8,6 +8,8 @@ import org.joda.time.DateTimeZone;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Instant;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -79,9 +81,14 @@ public class TestStringCast
     @Test
     public void asTimestamp()
     {
+        TimestampFormatter parser;
+        parser = TimestampFormatter.builder("%Y-%m-%d %H:%M:%S.%N", true)
+                .setDefaultZoneFromString("UTC")
+                .setDefaultDateFromString("1970-01-01")
+                .build();
         Timestamp expected = Timestamp.ofEpochSecond(1463084053, 123456000);
-        TimestampParser parser = TimestampParser.of("%Y-%m-%d %H:%M:%S.%N", DateTimeZone.UTC.toString());
-        assertEquals(expected, StringCast.asTimestamp("2016-05-12 20:14:13.123456", parser));
+        Instant instant = StringCast.asTimestamp("2016-05-12 20:14:13.123456", parser);
+        assertEquals(expected, Timestamp.ofInstant(instant));
 
         try {
             StringCast.asTimestamp("foo", parser);

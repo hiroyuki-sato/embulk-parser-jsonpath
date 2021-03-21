@@ -12,6 +12,8 @@ import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
 
+import java.time.Instant;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -22,7 +24,7 @@ public class TestColumnCaster
     public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
     public MapValue mapValue;
     public DataException thrown;
-    public TimestampParser parser;
+    public TimestampFormatter parser;
 
     @Before
     public void createResource()
@@ -32,7 +34,10 @@ public class TestColumnCaster
         kvs[0] = ValueFactory.newString("k");
         kvs[1] = ValueFactory.newString("v");
         mapValue = ValueFactory.newMap(kvs);
-        parser = TimestampParser.of("%Y-%m-%d %H:%M:%S.%N", DateTimeZone.UTC.toString());
+        parser = TimestampFormatter.builder("%Y-%m-%d %H:%M:%S.%N", true)
+                .setDefaultZoneFromString("UTC")
+                .setDefaultDateFromString("1970-01-01")
+                .build();
     }
 
     @Test
@@ -229,14 +234,14 @@ public class TestColumnCaster
     public void asTimestampFromFloat()
     {
         Timestamp expected = Timestamp.ofEpochSecond(1463084053, 500000000);
-        assertEquals(expected, ColumnCaster.asTimestamp(ValueFactory.newFloat(1463084053.5), parser));
+        assertEquals(expected, asTimestamp(ValueFactory.newFloat(1463084053.5), parser));
     }
 
     @Test
     public void asTimestampFromString()
     {
         Timestamp expected = Timestamp.ofEpochSecond(1463084053, 500000000);
-        assertEquals(expected, ColumnCaster.asTimestamp(ValueFactory.newString("2016-05-12 20:14:13.5"), parser));
+        assertEquals(expected, asTimestamp(ValueFactory.newString("2016-05-12 20:14:13.5"), parser));
     }
 
     @Test
@@ -249,5 +254,12 @@ public class TestColumnCaster
         catch (Throwable t) {
             assertTrue(t instanceof DataException);
         }
+    }
+
+    @SuppressWarnings("deprecated")
+    private Timestamp asTimestamp(Value value, TimestampFormatter parser)
+    {
+        Instant instant = ColumnCaster.asTimestamp(value,parser);
+        return Timestamp.ofInstant(instant);
     }
 }
