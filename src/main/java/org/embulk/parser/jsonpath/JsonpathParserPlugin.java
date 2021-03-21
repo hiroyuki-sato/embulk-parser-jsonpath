@@ -12,6 +12,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+import org.embulk.spi.BufferAllocator;
 import org.embulk.spi.type.TimestampType;
 import org.embulk.util.config.Config;
 import org.embulk.util.config.ConfigDefault;
@@ -136,7 +137,8 @@ public class JsonpathParserPlugin
         final PluginTask task = configMapper.map(config, PluginTask.class);
         Schema schema = getSchemaConfig(task).toSchema();
 
-        control.run(task.toTaskSource(), schema);
+        // use toTaskSource() instead of dump
+        control.run(task.dump(), schema);
     }
 
     @SuppressWarnings("deprecated")
@@ -155,7 +157,7 @@ public class JsonpathParserPlugin
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
 
         // TODO: Use Exec.getPageBuilder after dropping v0.9
-        try (final PageBuilder pageBuilder = Exec.getPageBuilder(Exec.getBufferAllocator(), schema, output)) {
+        try (final PageBuilder pageBuilder = getPageBuilder(Exec.getBufferAllocator(), schema, output)) {
             ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
 
             FileInputInputStream is = new FileInputInputStream(input);
@@ -272,5 +274,17 @@ public class JsonpathParserPlugin
             i++;
         }
         return formatters;
+    }
+    @SuppressWarnings("deprecation")  // For the use of new PageBuilder().
+    private static PageBuilder getPageBuilder(final BufferAllocator allocator, final Schema schema, final PageOutput output) {
+        try {
+            return Exec.getPageBuilder(allocator, schema, output);
+        } catch (final NoSuchMethodError ex) {
+            // Exec.getPageBuilder() is available from v0.10.17, and "new PageBuidler()" is deprecated then.
+            // It is not expected to happen because this plugin is embedded with Embulk v0.10.24+, but falling back just in case.
+            // TODO: Remove this fallback in v0.11.
+            logger.warn("embulk-parser-jsonpath is expected to work with Embulk v0.10.17+.", ex);
+            return new PageBuilder(allocator, schema, output);
+        }
     }
 }
