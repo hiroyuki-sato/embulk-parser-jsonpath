@@ -136,7 +136,7 @@ public class JsonpathParserPlugin
         final PluginTask task = configMapper.map(config, PluginTask.class);
         Schema schema = getSchemaConfig(task).toSchema();
 
-        control.run(task.toTaskSource(), schema);
+        control.run(task.dump(), schema);
     }
 
     @SuppressWarnings("deprecated")
@@ -155,7 +155,7 @@ public class JsonpathParserPlugin
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
 
         // TODO: Use Exec.getPageBuilder after dropping v0.9
-        try (final PageBuilder pageBuilder = Exec.getPageBuilder(Exec.getBufferAllocator(), schema, output)) {
+        try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
             ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
 
             FileInputInputStream is = new FileInputInputStream(input);
