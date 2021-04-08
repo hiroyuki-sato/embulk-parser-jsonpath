@@ -17,8 +17,8 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compileOnly "org.embulk:embulk-api:0.10.28"
-    compileOnly "org.embulk:embulk-spi:0.10.28"
+    compileOnly "org.embulk:embulk-api:0.10.29"
+    compileOnly "org.embulk:embulk-spi:0.10.29"
 
     compile("org.embulk:embulk-util-config:0.2.+") {
         // They conflict with embulk-core. They are once excluded here,
@@ -51,13 +51,14 @@ dependencies {
     compile "org.embulk:embulk-util-timestamp:0.2.1"
 
     testCompile "junit:junit:4.+"
-    testCompile "org.embulk:embulk-core:0.10.28"
-    testCompile  "org.embulk:embulk-core:0.10.28:tests"
-    testCompile  "org.embulk:embulk-standards:0.10.28"
+    testCompile "org.embulk:embulk-core:0.10.29"
+    testCompile  "org.embulk:embulk-core:0.10.29:tests"
+    // 0.10.29 eliminates embulk-standards
+    //testCompile  "org.embulk:embulk-standards:0.10.29"
 
     // TODO: Remove them.
     // These `testCompile` are a tentative workaround. It will be covered in Embulk core's testing mechanism.
-    testCompile "org.embulk:embulk-deps:0.10.28"
+    testCompile "org.embulk:embulk-deps:0.10.29"
 }
 
 checkstyle {
