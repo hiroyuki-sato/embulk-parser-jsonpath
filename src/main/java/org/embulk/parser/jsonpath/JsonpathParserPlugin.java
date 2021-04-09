@@ -54,7 +54,7 @@ public class JsonpathParserPlugin
             .addDefaultModules()
             .addModule(new TypeModule())
             .build();
-
+    private static final ConfigMapper CONFIG_MAPPER = CONFIG_MAPPER_FACTORY.createConfigMapper();
     private static final Configuration JSON_PATH_CONFIG = Configuration
             .builder()
             .mappingProvider(new JacksonMappingProvider())
@@ -132,8 +132,7 @@ public class JsonpathParserPlugin
     @Override
     public void transaction(ConfigSource config, ParserPlugin.Control control)
     {
-        final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
-        final PluginTask task = configMapper.map(config, PluginTask.class);
+        final PluginTask task = CONFIG_MAPPER.map(config, PluginTask.class);
         Schema schema = getSchemaConfig(task).toSchema();
 
         control.run(task.dump(), schema);
@@ -222,7 +221,7 @@ public class JsonpathParserPlugin
         Map<Column, String> columnMap = new HashMap<>();
         for (int i = 0; i < schema.size(); i++) {
             ColumnConfig config = getSchemaConfig(task).getColumn(i);
-            JsonpathColumnOption option = CONFIG_MAPPER_FACTORY.createConfigMapper().map(config.getOption(),JsonpathColumnOption.class);
+            JsonpathColumnOption option = CONFIG_MAPPER.map(config.getOption(),JsonpathColumnOption.class);
             if (option.getPath().isPresent()) {
                 columnMap.put(schema.getColumn(i), option.getPath().get());
             }
@@ -261,7 +260,7 @@ public class JsonpathParserPlugin
         for (final ColumnConfig column : schema.getColumns()) {
             if (column.getType() instanceof TimestampType) {
                 final JsonpathColumnOption columnOption =
-                        CONFIG_MAPPER_FACTORY.createConfigMapper().map(column.getOption(), JsonpathColumnOption.class);
+                        CONFIG_MAPPER.map(column.getOption(), JsonpathColumnOption.class);
 
                 final String pattern = columnOption.getFormat().orElse(task.getDefaultTimestampFormat());
                 formatters[i] = TimestampFormatter.builder(pattern, true)
