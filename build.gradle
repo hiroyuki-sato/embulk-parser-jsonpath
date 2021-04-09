@@ -20,7 +20,7 @@ dependencies {
     compileOnly "org.embulk:embulk-api:0.10.29"
     compileOnly "org.embulk:embulk-spi:0.10.29"
 
-    compile("org.embulk:embulk-util-config:0.2.+") {
+    compile("org.embulk:embulk-util-config:0.2.1") {
         // They conflict with embulk-core. They are once excluded here,
         // and added explicitly with versions exactly the same with embulk-core:0.10.19.
         exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
@@ -50,7 +50,7 @@ dependencies {
     compile "org.embulk:embulk-util-file:0.1.3"
     compile "org.embulk:embulk-util-timestamp:0.2.1"
 
-    testCompile "junit:junit:4.+"
+    testCompile "junit:junit:4.13.2"
     testCompile "org.embulk:embulk-core:0.10.29"
     testCompile  "org.embulk:embulk-core:0.10.29:tests"
     // 0.10.29 eliminates embulk-standards
@@ -84,19 +84,18 @@ embulkPlugin {
     type = "jsonpath"
 }
 
-// TODO: enable when the pure-java plugin publish.
-//publishing {
-//    publications {
-//        embulkPluginMaven(MavenPublication) {  // Publish it with "publishEmbulkPluginMavenPublicationToMavenRepository".
-//            from components.java  // Must be "components.java". The dependency modification works only for it.
-//        }
-//    }
-//    repositories {
-//        maven {
-//            url = "${project.buildDir}/mavenPublishLocal"
-//        }
-//    }
-//}
+publishing {
+    publications {
+        embulkPluginMaven(MavenPublication) {  // Publish it with "publishEmbulkPluginMavenPublicationToMavenRepository".
+            from components.java  // Must be "components.java". The dependency modification works only for it.
+        }
+    }
+    repositories {
+        maven {
+            url = "${project.buildDir}/mavenPublishLocal"
+        }
+    }
+}
 
 gem {
     authors = [ "Hiroyuki Sato","Takuma kanari" ]
