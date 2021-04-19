@@ -1,20 +1,24 @@
 package org.embulk.parser.jsonpath;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
+
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Optional;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.PluginTask;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.TypecastColumnOption;
 import org.embulk.spi.Column;
-import org.embulk.spi.ColumnConfig;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.config.units.ColumnConfig;
 import org.embulk.spi.ColumnVisitor;
 import org.embulk.spi.PageBuilder;
 import org.embulk.spi.Schema;
-import org.embulk.spi.SchemaConfig;
-import org.embulk.spi.json.JsonParseException;
-import org.embulk.spi.json.JsonParser;
-import org.embulk.spi.time.Timestamp;
-import org.embulk.spi.time.TimestampParser;
+import org.embulk.util.config.units.SchemaConfig;
+import org.embulk.util.json.JsonParseException;
+import org.embulk.util.json.JsonParser;
+import org.embulk.util.timestamp.TimestampFormatter;
 import org.msgpack.core.MessageTypeException;
 
 import java.util.List;
@@ -29,18 +33,19 @@ public class ColumnVisitorImpl
         implements ColumnVisitor
 {
     private static final JsonParser JSON_PARSER = new JsonParser();
-    private static final List<String> BOOL_TRUE_STRINGS = ImmutableList.of("true", "1", "yes", "on", "y", "t");
-    private static final List<String> BOOL_FALSE_STRINGS = ImmutableList.of("false", "0", "no", "off", "n", "f");
+    private static final List<String> BOOL_TRUE_STRINGS = Collections.unmodifiableList(Arrays.asList("true", "1", "yes", "on", "y", "t"));
+    private static final List<String> BOOL_FALSE_STRINGS = Collections.unmodifiableList(Arrays.asList("false", "0", "no", "off", "n", "f"));
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory.builder().addDefaultModules().build();
 
     protected final PluginTask task;
     protected final Schema schema;
     protected final PageBuilder pageBuilder;
-    protected final TimestampParser[] timestampParsers;
+    protected final TimestampFormatter[] timestampParsers;
     protected final Boolean[] autoTypecasts;
 
     protected JsonNode value;
 
-    public ColumnVisitorImpl(PluginTask task, Schema schema, PageBuilder pageBuilder, TimestampParser[] timestampParsers)
+    public ColumnVisitorImpl(PluginTask task, Schema schema, PageBuilder pageBuilder, TimestampFormatter[] timestampParsers)
     {
         this.task = task;
         this.schema = schema;
@@ -61,8 +66,9 @@ public class ColumnVisitorImpl
 
         if (schemaConfig.isPresent()) {
             for (ColumnConfig columnConfig : schemaConfig.get().getColumns()) {
-                TypecastColumnOption columnOption = columnConfig.getOption().loadConfig(TypecastColumnOption.class);
-                Boolean autoTypecast = columnOption.getTypecast().or(task.getDefaultTypecast());
+                ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
+                TypecastColumnOption columnOption = configMapper.map(columnConfig.getOption(),TypecastColumnOption.class);
+                Boolean autoTypecast = columnOption.getTypecast().orElse(task.getDefaultTypecast());
                 Column column = schema.lookupColumn(columnConfig.getName());
                 this.autoTypecasts[column.getIndex()] = autoTypecast;
             }
@@ -160,6 +166,7 @@ public class ColumnVisitorImpl
         }
     }
 
+    @SuppressWarnings("deprecation")  // For the use of new PageBuilder with java.time.Instant.
     @Override
     public void timestampColumn(Column column)
     {
@@ -168,8 +175,17 @@ public class ColumnVisitorImpl
         }
         else {
             try {
-                Timestamp timestamp = ColumnCaster.asTimestamp(newString(value.asText()), timestampParsers[column.getIndex()]);
-                pageBuilder.setTimestamp(column, timestamp);
+                Instant instant = ColumnCaster.asTimestamp(newString(value.asText()), timestampParsers[column.getIndex()]);
+                try {
+                    pageBuilder.setTimestamp(column, instant);
+                }
+                catch (final NoSuchMethodError ex) {
+                    // PageBuilder with Instant is available from v0.10.13, and org.embulk.spi.Timestamp is deprecated.
+                    // It is not expected to happen because this plugin is embedded with Embulk v0.10.24+, but falling back just in case.
+                    // TODO: Remove this fallback in v0.11.
+                    // logger.warn("embulk-parser-jsonpath is expected to work with Embulk v0.10.17+.", ex);
+                    pageBuilder.setTimestamp(column, org.embulk.spi.time.Timestamp.ofInstant(instant));
+                }
             }
             catch (MessageTypeException e) {
                 throw new JsonRecordValidateException(format("failed to get \"%s\" as Timestamp", value), e);

@@ -6,13 +6,15 @@ import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigLoader;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskSource;
-import org.embulk.spi.ColumnConfig;
+import org.embulk.spi.ExecInternal;
+import org.embulk.util.config.units.ColumnConfig;
 import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
+
 import org.embulk.spi.FileInput;
 import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
-import org.embulk.spi.SchemaConfig;
+import org.embulk.util.config.units.SchemaConfig;
 import org.embulk.spi.TestPageBuilderReader.MockPageOutput;
 import org.embulk.spi.time.Timestamp;
 import org.embulk.spi.type.Type;
@@ -80,7 +82,7 @@ public class TestJsonpathParserPlugin
     private ConfigSource getConfigFromYamlFile(File yamlFile)
             throws IOException
     {
-        ConfigLoader loader = new ConfigLoader(Exec.getModelManager());
+        ConfigLoader loader = new ConfigLoader(ExecInternal.getModelManager());
         return loader.fromYamlFile(yamlFile);
     }
 

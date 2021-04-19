@@ -1,7 +1,8 @@
 package org.embulk.parser.jsonpath.cast;
 
 import org.embulk.spi.DataException;
-import org.embulk.spi.time.Timestamp;
+
+import java.time.Instant;
 
 public class BooleanCast
 {
@@ -32,7 +33,7 @@ public class BooleanCast
         return value ? "true" : "false";
     }
 
-    public static Timestamp asTimestamp(boolean value) throws DataException
+    public static Instant asTimestamp(boolean value) throws DataException
     {
         throw new DataException(buildErrorMessage("timestamp", value));
     }

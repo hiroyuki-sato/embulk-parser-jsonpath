@@ -2,22 +2,29 @@ package org.embulk.parser.jsonpath;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Optional;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.InvalidJsonException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
-import org.embulk.config.Config;
-import org.embulk.config.ConfigDefault;
+import org.embulk.spi.type.TimestampType;
+import org.embulk.util.config.Config;
+import org.embulk.util.config.ConfigDefault;
 import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
-import org.embulk.config.Task;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.config.Task;
 import org.embulk.config.TaskSource;
 import org.embulk.spi.Column;
-import org.embulk.spi.ColumnConfig;
+import org.embulk.util.config.TaskMapper;
+import org.embulk.util.config.modules.TypeModule;
+import org.embulk.util.config.units.ColumnConfig;
 import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInput;
@@ -25,10 +32,9 @@ import org.embulk.spi.PageBuilder;
 import org.embulk.spi.PageOutput;
 import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
-import org.embulk.spi.SchemaConfig;
-import org.embulk.spi.time.TimestampParser;
-import org.embulk.spi.util.FileInputInputStream;
-import org.embulk.spi.util.Timestamps;
+import org.embulk.util.config.units.SchemaConfig;
+import org.embulk.util.timestamp.TimestampFormatter;
+import org.embulk.util.file.FileInputInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +49,12 @@ public class JsonpathParserPlugin
 {
 
     private static final Logger logger = LoggerFactory.getLogger(JsonpathParserPlugin.class);
-
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory
+            .builder()
+            .addDefaultModules()
+            .addModule(new TypeModule())
+            .build();
+    private static final ConfigMapper CONFIG_MAPPER = CONFIG_MAPPER_FACTORY.createConfigMapper();
     private static final Configuration JSON_PATH_CONFIG = Configuration
             .builder()
             .mappingProvider(new JacksonMappingProvider())
@@ -59,7 +70,7 @@ public class JsonpathParserPlugin
     }
 
     public interface PluginTask
-            extends Task, TimestampParser.Task
+            extends Task
     {
         @Config("root")
         @ConfigDefault("\"$\"")
@@ -81,6 +92,21 @@ public class JsonpathParserPlugin
         @Config("stop_on_invalid_record")
         @ConfigDefault("false")
         boolean getStopOnInvalidRecord();
+
+        // From org.embulk.spi.time.TimestampParser.Task.
+        @Config("default_timezone")
+        @ConfigDefault("\"UTC\"")
+        String getDefaultTimeZoneId();
+
+        // From org.embulk.spi.time.TimestampParser.Task.
+        @Config("default_timestamp_format")
+        @ConfigDefault("\"%Y-%m-%d %H:%M:%S.%N %z\"")
+        String getDefaultTimestampFormat();
+
+        // From org.embulk.spi.time.TimestampParser.Task.
+        @Config("default_date")
+        @ConfigDefault("\"1970-01-01\"")
+        String getDefaultDate();
     }
 
     public interface JsonpathColumnOption
@@ -89,30 +115,45 @@ public class JsonpathParserPlugin
         @Config("path")
         @ConfigDefault("null")
         Optional<String> getPath();
+
+        @Config("timezone")
+        @ConfigDefault("null")
+        Optional<String> getTimeZoneId();
+
+        @Config("format")
+        @ConfigDefault("null")
+        Optional<String> getFormat();
+
+        @Config("date")
+        @ConfigDefault("null")
+        Optional<String> getDate();
     }
 
     @Override
     public void transaction(ConfigSource config, ParserPlugin.Control control)
     {
-        PluginTask task = config.loadConfig(PluginTask.class);
-
+        final PluginTask task = CONFIG_MAPPER.map(config, PluginTask.class);
         Schema schema = getSchemaConfig(task).toSchema();
 
         control.run(task.dump(), schema);
     }
 
+    @SuppressWarnings("deprecated")
     @Override
     public void run(TaskSource taskSource, Schema schema,
             FileInput input, PageOutput output)
     {
-        PluginTask task = taskSource.loadTask(PluginTask.class);
+        final TaskMapper taskMapper = CONFIG_MAPPER_FACTORY.createTaskMapper();
+        final PluginTask task = taskMapper.map(taskSource, PluginTask.class);
+
         String jsonRoot = task.getRoot();
 
         logger.info("JSONPath = " + jsonRoot);
-        final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, getSchemaConfig(task));
+        final TimestampFormatter[] timestampParsers = newTimestampColumnFormatters(task, getSchemaConfig(task));
         final Map<Column, String> jsonPathMap = createJsonPathMap(task, schema);
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
 
+        // TODO: Use Exec.getPageBuilder after dropping v0.9
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
             ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
 
@@ -177,15 +218,15 @@ public class JsonpathParserPlugin
 
     private Map<Column, String> createJsonPathMap(PluginTask task, Schema schema)
     {
-        ImmutableMap.Builder<Column, String> builder = ImmutableMap.builder();
+        Map<Column, String> columnMap = new HashMap<>();
         for (int i = 0; i < schema.size(); i++) {
             ColumnConfig config = getSchemaConfig(task).getColumn(i);
-            JsonpathColumnOption option = config.getOption().loadConfig(JsonpathColumnOption.class);
+            JsonpathColumnOption option = CONFIG_MAPPER.map(config.getOption(),JsonpathColumnOption.class);
             if (option.getPath().isPresent()) {
-                builder.put(schema.getColumn(i), option.getPath().get());
+                columnMap.put(schema.getColumn(i), option.getPath().get());
             }
         }
-        return builder.build();
+        return Collections.unmodifiableMap(columnMap);
     }
 
     private void skipOrThrow(DataException cause, boolean stopOnInvalidRecord)
@@ -209,5 +250,26 @@ public class JsonpathParserPlugin
         else {
             throw new ConfigException("Attribute 'columns' is required but not set");
         }
+    }
+    @SuppressWarnings("deprecation")  // https://github.com/embulk/embulk/issues/1289
+    private static TimestampFormatter[] newTimestampColumnFormatters(
+            final PluginTask task,
+            final SchemaConfig schema) {
+        final TimestampFormatter[] formatters = new TimestampFormatter[schema.getColumnCount()];
+        int i = 0;
+        for (final ColumnConfig column : schema.getColumns()) {
+            if (column.getType() instanceof TimestampType) {
+                final JsonpathColumnOption columnOption =
+                        CONFIG_MAPPER.map(column.getOption(), JsonpathColumnOption.class);
+
+                final String pattern = columnOption.getFormat().orElse(task.getDefaultTimestampFormat());
+                formatters[i] = TimestampFormatter.builder(pattern, true)
+                        .setDefaultZoneFromString(columnOption.getTimeZoneId().orElse(task.getDefaultTimeZoneId()))
+                        .setDefaultDateFromString(columnOption.getDate().orElse(task.getDefaultDate()))
+                        .build();
+            }
+            i++;
+        }
+        return formatters;
     }
 }
