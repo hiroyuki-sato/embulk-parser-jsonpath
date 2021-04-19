@@ -6,20 +6,18 @@ import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigLoader;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskSource;
-import org.embulk.spi.ExecInternal;
-import org.embulk.util.config.units.ColumnConfig;
 import org.embulk.spi.DataException;
-import org.embulk.spi.Exec;
-
+import org.embulk.spi.ExecInternal;
 import org.embulk.spi.FileInput;
 import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
-import org.embulk.util.config.units.SchemaConfig;
 import org.embulk.spi.TestPageBuilderReader.MockPageOutput;
 import org.embulk.spi.time.Timestamp;
 import org.embulk.spi.type.Type;
 import org.embulk.spi.util.InputStreamFileInput;
 import org.embulk.spi.util.Pages;
+import org.embulk.util.config.units.ColumnConfig;
+import org.embulk.util.config.units.SchemaConfig;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -474,5 +472,4 @@ public class TestJsonpathParserPlugin
     {
         return new ColumnConfig(name, type, option);
     }
-
 }

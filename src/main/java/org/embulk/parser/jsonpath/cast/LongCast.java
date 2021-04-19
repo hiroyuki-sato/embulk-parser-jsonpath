@@ -13,7 +13,8 @@ public class LongCast
         return String.format("cannot cast long to %s: \"%s\"", as, value);
     }
 
-    public static boolean asBoolean(long value) throws DataException
+    public static boolean asBoolean(long value)
+            throws DataException
     {
         if (value == 1) {
             return true;
@@ -26,22 +27,26 @@ public class LongCast
         }
     }
 
-    public static long asLong(long value) throws DataException
+    public static long asLong(long value)
+            throws DataException
     {
         return value;
     }
 
-    public static double asDouble(long value) throws DataException
+    public static double asDouble(long value)
+            throws DataException
     {
         return (double) value;
     }
 
-    public static String asString(long value) throws DataException
+    public static String asString(long value)
+            throws DataException
     {
         return String.valueOf(value);
     }
 
-    public static Instant asTimestamp(long value) throws DataException
+    public static Instant asTimestamp(long value)
+            throws DataException
     {
         return Instant.ofEpochSecond(value);
     }

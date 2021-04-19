@@ -1,27 +1,26 @@
 package org.embulk.parser.jsonpath;
 
 import com.fasterxml.jackson.databind.JsonNode;
-
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.PluginTask;
 import org.embulk.parser.jsonpath.JsonpathParserPlugin.TypecastColumnOption;
 import org.embulk.spi.Column;
-import org.embulk.util.config.ConfigMapper;
-import org.embulk.util.config.ConfigMapperFactory;
-import org.embulk.util.config.units.ColumnConfig;
 import org.embulk.spi.ColumnVisitor;
 import org.embulk.spi.PageBuilder;
 import org.embulk.spi.Schema;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.config.units.ColumnConfig;
 import org.embulk.util.config.units.SchemaConfig;
 import org.embulk.util.json.JsonParseException;
 import org.embulk.util.json.JsonParser;
 import org.embulk.util.timestamp.TimestampFormatter;
 import org.msgpack.core.MessageTypeException;
 
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static java.lang.String.format;
 import static org.msgpack.value.ValueFactory.newBoolean;
@@ -67,7 +66,7 @@ public class ColumnVisitorImpl
         if (schemaConfig.isPresent()) {
             for (ColumnConfig columnConfig : schemaConfig.get().getColumns()) {
                 ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
-                TypecastColumnOption columnOption = configMapper.map(columnConfig.getOption(),TypecastColumnOption.class);
+                TypecastColumnOption columnOption = configMapper.map(columnConfig.getOption(), TypecastColumnOption.class);
                 Boolean autoTypecast = columnOption.getTypecast().orElse(task.getDefaultTypecast());
                 Column column = schema.lookupColumn(columnConfig.getName());
                 this.autoTypecasts[column.getIndex()] = autoTypecast;

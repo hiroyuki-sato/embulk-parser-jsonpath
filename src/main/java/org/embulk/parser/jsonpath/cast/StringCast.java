@@ -36,7 +36,8 @@ public class StringCast
         return String.format("cannot cast String to %s: \"%s\"", as, value);
     }
 
-    public static boolean asBoolean(String value) throws DataException
+    public static boolean asBoolean(String value)
+            throws DataException
     {
         if (TRUE_STRINGS.contains(value)) {
             return true;
@@ -49,7 +50,8 @@ public class StringCast
         }
     }
 
-    public static long asLong(String value) throws DataException
+    public static long asLong(String value)
+            throws DataException
     {
         try {
             return Long.parseLong(value);
@@ -59,7 +61,8 @@ public class StringCast
         }
     }
 
-    public static double asDouble(String value) throws DataException
+    public static double asDouble(String value)
+            throws DataException
     {
         try {
             return Double.parseDouble(value);
@@ -69,12 +72,14 @@ public class StringCast
         }
     }
 
-    public static String asString(String value) throws DataException
+    public static String asString(String value)
+            throws DataException
     {
         return value;
     }
 
-    public static Instant asTimestamp(String value, TimestampFormatter parser) throws DataException
+    public static Instant asTimestamp(String value, TimestampFormatter parser)
+            throws DataException
     {
         try {
             return parser.parse(value);
