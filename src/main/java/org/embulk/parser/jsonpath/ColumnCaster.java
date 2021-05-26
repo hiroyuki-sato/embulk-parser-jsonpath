@@ -15,7 +15,8 @@ class ColumnCaster
 {
     private ColumnCaster() {}
 
-    public static boolean asBoolean(Value value) throws DataException
+    public static boolean asBoolean(Value value)
+            throws DataException
     {
         if (value.isBooleanValue()) {
             return value.asBooleanValue().getBoolean();
@@ -34,7 +35,8 @@ class ColumnCaster
         }
     }
 
-    public static long asLong(Value value) throws DataException
+    public static long asLong(Value value)
+            throws DataException
     {
         if (value.isBooleanValue()) {
             return BooleanCast.asLong(value.asBooleanValue().getBoolean());
@@ -53,7 +55,8 @@ class ColumnCaster
         }
     }
 
-    public static double asDouble(Value value) throws DataException
+    public static double asDouble(Value value)
+            throws DataException
     {
         if (value.isBooleanValue()) {
             return BooleanCast.asDouble(value.asBooleanValue().getBoolean());
@@ -72,12 +75,14 @@ class ColumnCaster
         }
     }
 
-    public static String asString(Value value) throws DataException
+    public static String asString(Value value)
+            throws DataException
     {
         return value.toString();
     }
 
-    public static Instant asTimestamp(Value value, TimestampFormatter parser) throws DataException
+    public static Instant asTimestamp(Value value, TimestampFormatter parser)
+            throws DataException
     {
         if (value.isBooleanValue()) {
             return BooleanCast.asTimestamp(value.asBooleanValue().getBoolean());

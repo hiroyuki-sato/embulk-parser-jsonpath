@@ -258,7 +258,7 @@ public class TestColumnCaster
     @SuppressWarnings("deprecated")
     private Timestamp asTimestamp(Value value, TimestampFormatter parser)
     {
-        Instant instant = ColumnCaster.asTimestamp(value,parser);
+        Instant instant = ColumnCaster.asTimestamp(value, parser);
         return Timestamp.ofInstant(instant);
     }
 }
