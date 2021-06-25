@@ -132,3 +132,84 @@ tasks.withType(JavaCompile) {
 test {
   maxHeapSize = "2g"
 }
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+jar {
+    from rootProject.file("LICENSE.txt")
+}
+
+sourcesJar {
+    from rootProject.file("LICENSE.txt")
+}
+
+javadocJar {
+    from rootProject.file("LICENSE.txt")
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = project.group
+            artifactId = project.name
+
+            from components.java  // Must be "components.java". The dependency modification works only for it.
+            // javadocJar and sourcesJar are added by java.withJavadocJar() and java.withSourcesJar() above.
+            // See: https://docs.gradle.org/current/javadoc/org/gradle/api/plugins/JavaPluginExtension.html
+
+            pom {  // https://central.sonatype.org/pages/requirements.html
+                packaging "jar"
+
+                name = project.name
+                description = project.description
+                url = "https://github.com/hiroyuki-sato/embulk-filter-jsonpath"
+
+                licenses {
+                    license {
+                        // http://central.sonatype.org/pages/requirements.html#license-information
+                        name = "MIT License"
+                        url = "http://www.opensource.org/licenses/mit-license.php"
+                    }
+                }
+
+                developers {
+                    developer {
+                        name = "Hiroyuki Sato"
+                        email = "hiroysato@gmail.com"
+                    }
+                }
+
+                scm {
+                    connection = "scm:git:git://github.com/hiroyuki-sato/embulk-filter-jsonpath.git"
+                    developerConnection = "scm:git:git@github.com:hiroyuki-sato/embulk-filter-jsonpath.git"
+                    url = "https://github.com/hiroyuki-sato/embulk-filter-jsonpath"
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {  // publishMavenPublicationToMavenCentralRepository
+            name = "mavenCentral"
+            if (project.version.endsWith("-SNAPSHOT")) {
+                url "https://s01.oss.sonatype.org/content/repositories/snapshots"
+            } else {
+                url "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2"
+            }
+
+            credentials {
+                username = project.hasProperty("ossrhUsername") ? ossrhUsername : ""
+                password = project.hasProperty("ossrhPassword") ? ossrhPassword : ""
+            }
+        }
+    }
+}
+
+signing {
+    // https://docs.gradle.org/current/userguide/signing_plugin.html#sec:using_gpg_agent
+    useGpgCmd()
+    sign publishing.publications.maven
+}
