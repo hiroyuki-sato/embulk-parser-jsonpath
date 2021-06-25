@@ -9,7 +9,7 @@ repositories {
     jcenter()
 }
 
-group = "com.github.hiroyuki_sato"
+group = "io.github.hiroyuki-sato"
 version = "0.4.0-SNAPSHOT"
 description = "Parses JSON files with JSONPath read by other file input plugins."
 
