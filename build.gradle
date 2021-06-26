@@ -153,7 +153,7 @@ publishing {
 
                 name = project.name
                 description = project.description
-                url = "https://github.com/hiroyuki-sato/embulk-filter-jsonpath"
+                url = "https://github.com/hiroyuki-sato/embulk-parser-jsonpath"
 
                 licenses {
                     license {
@@ -171,9 +171,9 @@ publishing {
                 }
 
                 scm {
-                    connection = "scm:git:git://github.com/hiroyuki-sato/embulk-filter-jsonpath.git"
-                    developerConnection = "scm:git:git@github.com:hiroyuki-sato/embulk-filter-jsonpath.git"
-                    url = "https://github.com/hiroyuki-sato/embulk-filter-jsonpath"
+                    connection = "scm:git:git://github.com/hiroyuki-sato/embulk-parser-jsonpath.git"
+                    developerConnection = "scm:git:git@github.com:hiroyuki-sato/embulk-parser-jsonpath.git"
+                    url = "https://github.com/hiroyuki-sato/embulk-parser-jsonpath"
                 }
             }
         }
