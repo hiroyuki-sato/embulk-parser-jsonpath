@@ -84,19 +84,6 @@ embulkPlugin {
     type = "jsonpath"
 }
 
-publishing {
-    publications {
-        embulkPluginMaven(MavenPublication) {  // Publish it with "publishEmbulkPluginMavenPublicationToMavenRepository".
-            from components.java  // Must be "components.java". The dependency modification works only for it.
-        }
-    }
-    repositories {
-        maven {
-            url = "${project.buildDir}/mavenPublishLocal"
-        }
-    }
-}
-
 gem {
     authors = [ "Hiroyuki Sato","Takuma kanari" ]
     email = [ "hiroysato@gmail.com","chemtrails.t@gmail.com"]
