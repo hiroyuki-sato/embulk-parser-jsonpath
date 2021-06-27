@@ -1,6 +1,10 @@
 # ChangeLog
 
-## 0.3.2 (20120-07-02)
+## 0.4.0 (2021-06-27)
+
+* Get ready for v0.11 and v1.0
+
+## 0.3.2 (2020-07-02)
 
 * Use [gradle-embulk-plugins](https://github.com/embulk/gradle-embulk-plugins)
 * Add GitHub Actions CI
