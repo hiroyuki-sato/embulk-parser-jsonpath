@@ -10,14 +10,14 @@ The JSON with [JSONPath](http://goessner.net/articles/JsonPath/) parser plugin f
 ## Configuration
 
 * **type**: Specify this parser as jsonpath
-* **columns**: Specify column name and type. See below (array, required)
+* **schema**: Specify column name and type. See below (array, required)
 * **root**: Specify data path with JSONPath. It must be Array object (string, default:'$') ([detail](https://github.com/jayway/JsonPath#operators))
 * **stop_on_invalid_record**: Stop bulk load transaction if a file includes invalid record (such as invalid timestamp) (boolean, default: false)
 * **default_timezone**: Default timezone of the timestamp (string, default: UTC)
 * **default_timestamp_format**: Default timestamp format of the timestamp (string, default: `%Y-%m-%d %H:%M:%S.%N %z`)
 * **default_typecast**: Specify whether to cast values automatically to the specified types or not (boolean, default: true)
 
-### columns
+### schema
 
 * **name**: Name of the column (string, required)
 * **type**: Type of the column (string, required)
@@ -66,7 +66,7 @@ in:
     type: jsonpath
     root: "$.results"
     default_timezone: "Asia/Tokyo"
-    columns:
+    schema:
       - { name: "name",          type: string }
       - { name: "city",          type: string }
       - { name: "street_name",   type: string }
@@ -116,7 +116,7 @@ If you want to handle more complicated json, you can specify jsonpath to also **
 
 ```yaml
 root: $.students
-columns:
+schema:
   - {name: firstName, type: string, path: "names[0]"}
   - {name: lastName, type: string, path: "names[1]"}
 ```

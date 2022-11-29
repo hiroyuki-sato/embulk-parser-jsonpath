@@ -5,7 +5,7 @@ in:
     type: jsonpath
     root: "$.results"
     default_timezone: "Asia/Tokyo"
-    columns:
+    schema:
       - { name: "name",          type: string }
       - { name: "city",          type: string }
       - { name: "street_name",   type: string }
