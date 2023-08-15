@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.embulk.spi.type.Types.BOOLEAN;
@@ -437,6 +438,47 @@ public class TestJsonpathParserPlugin
                 assertNull(record[i]);
             }
         }
+    }
+
+    @Test
+    public void multipleFileInputs()
+            throws Exception
+    {
+        SchemaConfig schema = schema(column("_c0", STRING));
+        ConfigSource config = this.config.deepCopy().set("columns", schema);
+
+        transaction(config, fileInputs(new String[][] {
+                new String[] { "[{\"_c0\":\"embulk\"}]" },
+                new String[] { "[{\"_c0\":\"エンバルク\"}]" }
+        }));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(2, records.size());
+
+        Object[] record;
+        {
+            record = records.get(0);
+            assertEquals("embulk", record[0]);
+        }
+        {
+            record = records.get(1);
+            assertEquals("エンバルク", record[0]);
+        }
+
+        recreatePageOutput();
+    }
+
+    private FileInput fileInputs(String[][] fileLines)
+            throws Exception
+    {
+        InputStream[] ins = Arrays.stream(fileLines).map(lines -> {
+            StringBuilder sb = new StringBuilder();
+            for (String line : lines) {
+                sb.append(line).append("\n");
+            }
+            return new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8));
+        }).toArray(InputStream[]::new);
+        return new InputStreamFileInput(runtime.getBufferAllocator(), provider(ins));
     }
 
     private FileInput fileInput(String... lines)

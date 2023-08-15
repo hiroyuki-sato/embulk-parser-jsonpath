@@ -34,6 +34,8 @@ import org.embulk.util.timestamp.TimestampFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
@@ -159,8 +161,13 @@ public class JsonpathParserPlugin
             FileInputInputStream is = new FileInputInputStream(input);
             while (is.nextFile()) {
                 final JsonNode json;
-                try {
-                    json = JsonPath.using(JSON_PATH_CONFIG).parse(is).read(jsonRoot, JsonNode.class);
+                try(ByteArrayOutputStream bout = new ByteArrayOutputStream()) {
+                    byte[] buffer = new byte[8192];
+                    int len = 0;
+                    while((len = is.read(buffer)) != -1) {
+                        bout.write(buffer, 0, len);
+                    }
+                    json = JsonPath.using(JSON_PATH_CONFIG).parse(bout.toString()).read(jsonRoot, JsonNode.class);
                 }
                 catch (PathNotFoundException e) {
                     skipOrThrow(new DataException(format(Locale.ENGLISH,
@@ -170,6 +177,9 @@ public class JsonpathParserPlugin
                 catch (InvalidJsonException e) {
                     skipOrThrow(new DataException(e), stopOnInvalidRecord);
                     continue;
+                }
+                catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
 
                 if (!json.isArray()) {
