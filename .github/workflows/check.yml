@@ -1,0 +1,42 @@
+name: Check
+on: [ pull_request, push ]
+jobs:
+  check:
+    runs-on: ${{ matrix.os }}
+    # push: always run.
+    # pull_request: run only when the PR is submitted from a forked repository, not within this repository.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
+        - macOS-latest  # https://github.com/embulk/embulk-parser-csv/issues/4
+        - windows-latest
+
+    steps:
+    - name: Set Git's core.autocrlf to false for Windows before checkout
+      run: git config --global core.autocrlf false
+    - uses: actions/checkout@v3
+    - name: Set up OpenJDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: 8
+        distribution: "temurin"
+        cache: "gradle"
+
+    # GitHub Actions on Windows set environment variables TMP and TEMP with a legacy DOS 8.3 filename: "C:\Users\RUNNER~1\..."
+    # On the other hand, "embulk-input-file" expects a long filename (LFN) on Windows.
+    #
+    # The following two steps override TMP and TEMP with LFN. USERPROFILE is set with LFN fortunately.
+    #
+    # See: https://github.com/actions/virtual-environments/issues/712
+
+    - name: Override TMP to use Windows' long filename (LFN)
+      run: echo "TMP=$env:USERPROFILE\AppData\Local\Temp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      if: matrix.os == 'windows-latest'
+    - name: Override TEMP to use Windows' long filename (LFN)
+      run: echo "TEMP=$env:USERPROFILE\AppData\Local\Temp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      if: matrix.os == 'windows-latest'
+    - name: Check
+      run: ./gradlew --stacktrace :check
