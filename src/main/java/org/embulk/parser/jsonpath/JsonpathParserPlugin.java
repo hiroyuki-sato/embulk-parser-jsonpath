@@ -182,7 +182,8 @@ public class JsonpathParserPlugin
                             continue;
                         }
                     }
-                } else {
+                }
+                else {
                     try {
                         createRecordFromJson(json, schema, jsonPathMap, visitor, pageBuilder);
                     }

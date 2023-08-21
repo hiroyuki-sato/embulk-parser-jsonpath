@@ -38,8 +38,8 @@ import static org.embulk.spi.type.Types.TIMESTAMP;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.msgpack.value.ValueFactory.newArray;
 import static org.msgpack.value.ValueFactory.newMap;
@@ -456,7 +456,8 @@ public class TestJsonpathParserPlugin
 
     @Test
     public void rootPathJsonIsObject()
-            throws Exception {
+            throws Exception
+    {
         SchemaConfig schema = schema(column("__c0", STRING, config().set("path", "$._c0")));
         ConfigSource config = this.config.deepCopy().set("columns", schema).set("root", "$[0].root");
 
@@ -472,7 +473,8 @@ public class TestJsonpathParserPlugin
     }
 
     @Test
-    public void rootPathJsonIsNotArrayOrObject() {
+    public void rootPathJsonIsNotArrayOrObject()
+    {
         assertThrows(DataException.class, () -> {
             SchemaConfig schema = schema(column("__c0", STRING, config().set("path", "$._c0")));
             ConfigSource config = this.config.deepCopy()
