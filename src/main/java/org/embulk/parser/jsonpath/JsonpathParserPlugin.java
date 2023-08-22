@@ -46,7 +46,6 @@ import static java.util.Locale.ENGLISH;
 public class JsonpathParserPlugin
         implements ParserPlugin
 {
-
     private static final Logger logger = LoggerFactory.getLogger(JsonpathParserPlugin.class);
     private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory
             .builder()
