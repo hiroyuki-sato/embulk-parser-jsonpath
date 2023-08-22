@@ -38,6 +38,7 @@ import static org.embulk.spi.type.Types.TIMESTAMP;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.msgpack.value.ValueFactory.newArray;
@@ -437,6 +438,56 @@ public class TestJsonpathParserPlugin
                 assertNull(record[i]);
             }
         }
+    }
+
+    @Test
+    public void notArrayObject()
+            throws Exception
+    {
+        SchemaConfig schema = schema(column("__c0", STRING, config().set("path", "$._c0")));
+        ConfigSource config = this.config.deepCopy().set("columns", schema);
+
+        transaction(config, fileInput("{ \"_c0\": \"embulk\" }"));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(1, records.size());
+        assertEquals("embulk", records.get(0)[0]);
+    }
+
+    @Test
+    public void rootPathJsonIsObject()
+            throws Exception
+    {
+        SchemaConfig schema = schema(column("__c0", STRING, config().set("path", "$._c0")));
+        ConfigSource config = this.config.deepCopy().set("columns", schema).set("root", "$[0].root");
+
+        transaction(config, fileInput(
+                "[",
+                "{ \"root\": { \"_c0\": \"embulk\" } }",
+                "]"
+        ));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(1, records.size());
+        assertEquals("embulk", records.get(0)[0]);
+    }
+
+    @Test
+    public void rootPathJsonIsNotArrayOrObject()
+    {
+        assertThrows(DataException.class, () -> {
+            SchemaConfig schema = schema(column("__c0", STRING, config().set("path", "$._c0")));
+            ConfigSource config = this.config.deepCopy()
+                    .set("columns", schema)
+                    .set("root", "$[0].root")
+                    .set("stop_on_invalid_record", true);
+
+            transaction(config, fileInput(
+                    "[",
+                    "{ \"root\": \"embulk\" }",
+                    "]"
+            ));
+        });
     }
 
     private FileInput fileInput(String... lines)
