@@ -166,6 +166,7 @@ public class JsonpathParserPlugin
                     while ((len = is.read(buffer)) != -1) {
                         bout.write(buffer, 0, len);
                     }
+                    // parse(InputStream json) cause is.close(), so use parse(String json)
                     json = JsonPath.using(JSON_PATH_CONFIG).parse(bout.toString("UTF-8")).read(jsonRoot, JsonNode.class);
                 }
                 catch (PathNotFoundException e) {
