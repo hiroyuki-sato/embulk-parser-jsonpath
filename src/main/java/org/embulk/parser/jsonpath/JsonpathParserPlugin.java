@@ -160,13 +160,13 @@ public class JsonpathParserPlugin
             FileInputInputStream is = new FileInputInputStream(input);
             while (is.nextFile()) {
                 final JsonNode json;
-                try(ByteArrayOutputStream bout = new ByteArrayOutputStream()) {
+                try (ByteArrayOutputStream bout = new ByteArrayOutputStream()) {
                     byte[] buffer = new byte[8192];
                     int len = 0;
                     while((len = is.read(buffer)) != -1) {
                         bout.write(buffer, 0, len);
                     }
-                    json = JsonPath.using(JSON_PATH_CONFIG).parse(bout.toString()).read(jsonRoot, JsonNode.class);
+                    json = JsonPath.using(JSON_PATH_CONFIG).parse(bout.toString("UTF-8")).read(jsonRoot, JsonNode.class);
                 }
                 catch (PathNotFoundException e) {
                     skipOrThrow(new DataException(format(Locale.ENGLISH,
