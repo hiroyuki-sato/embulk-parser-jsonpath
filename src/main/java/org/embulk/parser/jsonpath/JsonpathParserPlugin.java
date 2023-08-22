@@ -163,7 +163,7 @@ public class JsonpathParserPlugin
                 try (ByteArrayOutputStream bout = new ByteArrayOutputStream()) {
                     byte[] buffer = new byte[8192];
                     int len = 0;
-                    while((len = is.read(buffer)) != -1) {
+                    while ((len = is.read(buffer)) != -1) {
                         bout.write(buffer, 0, len);
                     }
                     json = JsonPath.using(JSON_PATH_CONFIG).parse(bout.toString("UTF-8")).read(jsonRoot, JsonNode.class);
