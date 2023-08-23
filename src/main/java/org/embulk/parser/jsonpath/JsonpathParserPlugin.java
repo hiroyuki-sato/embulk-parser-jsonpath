@@ -154,7 +154,7 @@ public class JsonpathParserPlugin
 
         // TODO: Use Exec.getPageBuilder after dropping v0.9
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output);
-            final FileInputInputStream is = new FileInputInputStream(input)) {
+             final FileInputInputStream is = new FileInputInputStream(input)) {
             ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
             while (is.nextFile()) {
                 // parse(InputStream json) cause is.close(), so wrapping the original is into a temporary InputStream.
