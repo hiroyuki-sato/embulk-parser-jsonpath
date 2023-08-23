@@ -34,8 +34,7 @@ import org.embulk.util.timestamp.TimestampFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
@@ -154,20 +153,21 @@ public class JsonpathParserPlugin
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
 
         // TODO: Use Exec.getPageBuilder after dropping v0.9
-        try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
+        try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output);
+            final FileInputInputStream is = new FileInputInputStream(input)) {
             ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
-
-            FileInputInputStream is = new FileInputInputStream(input);
             while (is.nextFile()) {
-                final JsonNode json;
-                try (ByteArrayOutputStream bout = new ByteArrayOutputStream()) {
-                    byte[] buffer = new byte[8192];
-                    int len = 0;
-                    while ((len = is.read(buffer)) != -1) {
-                        bout.write(buffer, 0, len);
+                // parse(InputStream json) cause is.close(), so wrapping the original is into a temporary InputStream.
+                final InputStream toParse = new InputStream() {
+                    @Override
+                    public int read()
+                    {
+                        return is.read();
                     }
-                    // parse(InputStream json) cause is.close(), so use parse(String json)
-                    json = JsonPath.using(JSON_PATH_CONFIG).parse(bout.toString("UTF-8")).read(jsonRoot, JsonNode.class);
+                };
+                final JsonNode json;
+                try {
+                    json = JsonPath.using(JSON_PATH_CONFIG).parse(toParse).read(jsonRoot, JsonNode.class);
                 }
                 catch (PathNotFoundException e) {
                     skipOrThrow(new DataException(format(Locale.ENGLISH,
@@ -177,9 +177,6 @@ public class JsonpathParserPlugin
                 catch (InvalidJsonException e) {
                     skipOrThrow(new DataException(e), stopOnInvalidRecord);
                     continue;
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
                 }
 
                 if (json.isArray()) {
