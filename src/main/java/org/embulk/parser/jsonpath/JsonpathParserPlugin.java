@@ -34,6 +34,7 @@ import org.embulk.util.timestamp.TimestampFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
@@ -155,40 +156,49 @@ public class JsonpathParserPlugin
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
             ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
 
-            FileInputInputStream is = new FileInputInputStream(input);
-            while (is.nextFile()) {
-                final JsonNode json;
-                try {
-                    json = JsonPath.using(JSON_PATH_CONFIG).parse(is).read(jsonRoot, JsonNode.class);
-                }
-                catch (PathNotFoundException e) {
-                    skipOrThrow(new DataException(format(Locale.ENGLISH,
-                            "Failed to get root json path='%s'", jsonRoot)), stopOnInvalidRecord);
-                    continue;
-                }
-                catch (InvalidJsonException e) {
-                    skipOrThrow(new DataException(e), stopOnInvalidRecord);
-                    continue;
-                }
+            try (final FileInputInputStream is = new FileInputInputStream(input)) {
+                while (is.nextFile()) {
+                    // parse(InputStream json) cause is.close(), so wrapping the original is into a temporary InputStream.
+                    final InputStream toParse = new InputStream() {
+                        @Override
+                        public int read()
+                        {
+                            return is.read();
+                        }
+                    };
+                    final JsonNode json;
+                    try {
+                        json = JsonPath.using(JSON_PATH_CONFIG).parse(toParse).read(jsonRoot, JsonNode.class);
+                    }
+                    catch (PathNotFoundException e) {
+                        skipOrThrow(new DataException(format(Locale.ENGLISH,
+                                "Failed to get root json path='%s'", jsonRoot)), stopOnInvalidRecord);
+                        continue;
+                    }
+                    catch (InvalidJsonException e) {
+                        skipOrThrow(new DataException(e), stopOnInvalidRecord);
+                        continue;
+                    }
 
-                if (json.isArray()) {
-                    for (JsonNode recordValue : json) {
+                    if (json.isArray()) {
+                        for (JsonNode recordValue : json) {
+                            try {
+                                createRecordFromJson(recordValue, schema, jsonPathMap, visitor, pageBuilder);
+                            }
+                            catch (DataException e) {
+                                skipOrThrow(e, stopOnInvalidRecord);
+                                continue;
+                            }
+                        }
+                    }
+                    else {
                         try {
-                            createRecordFromJson(recordValue, schema, jsonPathMap, visitor, pageBuilder);
+                            createRecordFromJson(json, schema, jsonPathMap, visitor, pageBuilder);
                         }
                         catch (DataException e) {
                             skipOrThrow(e, stopOnInvalidRecord);
                             continue;
                         }
-                    }
-                }
-                else {
-                    try {
-                        createRecordFromJson(json, schema, jsonPathMap, visitor, pageBuilder);
-                    }
-                    catch (DataException e) {
-                        skipOrThrow(e, stopOnInvalidRecord);
-                        continue;
                     }
                 }
             }
