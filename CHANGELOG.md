@@ -1,5 +1,10 @@
 # ChangeLog
 
+## 0.4.1 (2023-09-11)
+
+* Support FileInputInputStream with multiple InputStreams (@chikamura)
+* Support not array object (@tksfjt1024, @chikamura)
+
 ## 0.4.0 (2021-06-27)
 
 * Get ready for v0.11 and v1.0
